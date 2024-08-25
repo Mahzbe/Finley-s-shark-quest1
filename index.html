@@ -91,8 +91,7 @@
                 x: 50,
                 y: 50,
                 width: 50,
-                height: 50,
-                direction: 1 // 1: right, 2: down, 3: left, 4: up
+                height: 50
             },
             score: 0,
             movesLeft: 7,
@@ -206,11 +205,11 @@
             } else if (game.movesLeft <= 0 && !game.puzzleSolved) {
                 gameOver();
             } else {
-                refillPuzzleGrid();
+                refillPuzzle();
             }
         }
 
-        function refillPuzzleGrid() {
+        function refillPuzzle() {
             for (let i = 0; i < 4; i++) {
                 for (let j = 0; j < 4; j++) {
                     if (!game.puzzleGrid[i][j]) {
@@ -231,19 +230,25 @@
                 const moveY = (dy / distance) * game.shark.speed;
                 game.shark.x += moveX;
                 game.shark.y += moveY;
+
+                // Ensure Shark stays within bounds
+                game.shark.x = Math.max(0, Math.min(750, game.shark.x));
+                game.shark.y = Math.max(0, Math.min(550, game.shark.y));
+
                 document.getElementById('shark').style.left = game.shark.x + 'px';
                 document.getElementById('shark').style.top = game.shark.y + 'px';
             }
         }
 
         function updateFinleyPosition() {
-            const dx = game.finley.x - game.shark.x;
-            const dy = game.finley.y - game.shark.y;
+            const dx = game.shark.x - game.finley.x;
+            const dy = game.shark.y - game.finley.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            
+
             if (distance > 0) {
-                const moveX = (dx / distance) * -2;
-                const moveY = (dy / distance) * -2;
+                const moveX = (dx / distance) * -2; // Move away from the Shark
+                const moveY = (dy / distance) * -2; // Move away from the Shark
+
                 game.finley.x += moveX;
                 game.finley.y += moveY;
 
