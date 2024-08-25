@@ -96,6 +96,7 @@
                 moves: 7, // Initialize move limit
                 matches: 0,
                 puzzleGrid: generatePuzzleGrid(),
+                puzzleSolved: false,
                 timer: 7 // Initialize timer
             };
 
@@ -113,10 +114,10 @@
             timerInterval = setInterval(() => {
                 if (game.gameOver) return;
 
-                game.timer--;
-                timerElement.textContent = `Moves Left: ${game.timer}`;
+                game.moves--;
+                timerElement.textContent = `Moves Left: ${game.moves}`;
 
-                if (game.timer <= 0) {
+                if (game.moves <= 0) {
                     clearInterval(timerInterval);
                     gameOver();
                 }
@@ -178,12 +179,15 @@
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Draw Finley
             ctx.fillStyle = 'green';
             ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
 
+            // Draw Shark
             ctx.fillStyle = 'red';
             ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
 
+            // Draw Score
             ctx.fillStyle = 'white';
             ctx.fillText(`Score: ${game.score}`, 10, 10);
         }
@@ -201,8 +205,8 @@
             document.getElementById("game-over-screen").style.display = "block";
             document.getElementById("final-score").innerText = game.score;
             document.getElementById("game-status").innerText = `You ${game.matches >= 5 ? 'won' : 'lost'} the game!`;
-            if (game.timer <= 0) {
-                document.getElementById("game-status").innerText += ' Time ran out!';
+            if (game.moves <= 0) {
+                document.getElementById("game-status").innerText += ' No moves left!';
             }
         }
 
