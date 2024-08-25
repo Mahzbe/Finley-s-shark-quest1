@@ -41,7 +41,7 @@
             matchesFound: 0,
             puzzleSolved: false,
             finley: { x: 50, y: 50, width: 50, height: 50 },
-            shark: { x: 650, y: 100, width: 50, height: 50, speed: 2 },
+            shark: { x: 650, y: 100, width: 50, height: 50, speed: 1 },
             finleyDirection: { x: 1, y: 1 }, // Direction in which Finley moves
             lastMoveTime: 0
         };
@@ -55,6 +55,7 @@
             game.matchesFound = 0;
             game.puzzleSolved = false;
             game.finleyDirection = { x: 1, y: 1 };
+            game.shark.speed = 1; // Reset shark speed
             game.lastMoveTime = performance.now();
             generatePuzzle();
             gameLoop();
@@ -68,7 +69,7 @@
                 matchesFound: 0,
                 puzzleSolved: false,
                 finley: { x: 50, y: 50, width: 50, height: 50 },
-                shark: { x: 650, y: 100, width: 50, height: 50, speed: 2 },
+                shark: { x: 650, y: 100, width: 50, height: 50, speed: 1 },
                 finleyDirection: { x: 1, y: 1 },
                 lastMoveTime: 0
             };
@@ -226,10 +227,8 @@
 
         function renderGameObjects() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
             ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
-
             ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
             ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
         }
