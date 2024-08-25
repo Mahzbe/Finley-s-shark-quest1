@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finley's Shark Quest</title>
     <style>
-        /* ... */
+        /* Add your CSS styles here */
     </style>
 </head>
 <body>
@@ -19,8 +19,9 @@
         <p>Your score: <span id="final-score"></span></p>
         <button id="restart-button" onclick="restartGame()">Restart</button>
     </div>
+
     <script>
-        // Game logic
+        // Game Variables
         let game = {
             level: 0,
             puzzle: {
@@ -33,16 +34,19 @@
             shark: {
                 speed: 1,
                 aggression: 1,
-                x: 0,
-                y: 0
+                x: 100,
+                y: 100, // Initial position
+                width: 50,
+                height: 50
             },
             finley: {
-                x: 0,
-                y: 0,
+                x: 50,
+                y: 50,
                 width: 50,
                 height: 50
             },
             score: 0,
+            gameOver: false,
             puzzleGrid: [
                 [null, null, null, null],
                 [null, null, null, null],
@@ -60,6 +64,7 @@
             document.getElementById("game-canvas").style.display = "block";
             generatePuzzlePieces();
             generatePuzzle();
+            game.gameOver = false;
             gameLoop();
         }
 
@@ -67,48 +72,46 @@
             const puzzlePieces = [];
             for (let i = 0; i < 6; i++) {
                 const piece = {
-                    x: Math.floor(Math.random() * 400),
-                    y: Math.floor(Math.random() * 400),
-                    type: `puzzle-piece-${i + 1}`,
+                    x: Math.floor(Math.random() * (canvas.width - 50)),
+                    y: Math.floor(Math.random() * (canvas.height - 50)),
+                    width: 50,
+                    height: 50,
+                    type: `puzzle-piece-${i + 1}`
                 };
                 puzzlePieces.push(piece);
             }
             game.puzzle.puzzlePieces = puzzlePieces;
         }
 
-        // ... (rest of the code remains the same)
         function updateShark() {
             game.shark.speed = game.puzzle.sharkBehavior.speed;
             game.shark.aggression = game.puzzle.sharkBehavior.aggression;
-        }
-
-        function collectPiece(piece) {
-            if (piece.type === 'slowDownShark') {
-                game.shark.speed -= 0.5;
-                game.shark.aggression -= 0.5;
-                finleyDialogue("Ha! Take that, shark!");
-                addSpeedLinesEffect();
-            } else {
-                finleyDialogue("Woohoo!");
-                addSparkleEffect();
+            game.shark.x += game.shark.speed;
+            game.shark.y += game.shark.speed;
+            // Add boundary checks for the shark
+            if (game.shark.x + game.shark.width > canvas.width || game.shark.x < 0) {
+                game.shark.speed = -game.shark.speed;
             }
-            // Remove the collected piece
-            game.puzzle.puzzlePieces = game.puzzle.puzzlePieces.filter((p) => p !== piece);
+            if (game.shark.y + game.shark.height > canvas.height || game.shark.y < 0) {
+                game.shark.speed = -game.shark.speed;
+            }
         }
 
         function handleKeyPress(event) {
+            if (game.gameOver) return;
+
             switch (event.key) {
                 case 'ArrowUp':
-                    game.finley.y -= 10;
+                    game.finley.y = Math.max(0, game.finley.y - 10);
                     break;
                 case 'ArrowDown':
-                    game.finley.y += 10;
+                    game.finley.y = Math.min(canvas.height - game.finley.height, game.finley.y + 10);
                     break;
                 case 'ArrowLeft':
-                    game.finley.x -= 10;
+                    game.finley.x = Math.max(0, game.finley.x - 10);
                     break;
                 case 'ArrowRight':
-                    game.finley.x += 10;
+                    game.finley.x = Math.min(canvas.width - game.finley.width, game.finley.x + 10);
                     break;
             }
         }
@@ -116,22 +119,20 @@
         document.addEventListener('keydown', handleKeyPress);
 
         function checkCollisions() {
-            // Check for collisions with puzzle pieces
             game.puzzle.puzzlePieces.forEach((piece) => {
                 if (checkCollision(game.finley, piece)) {
                     collectPiece(piece);
                 }
             });
 
-            // Check for collisions with the shark
             if (checkCollision(game.finley, game.shark)) {
-                finleyDialogue("Oh no!");
-                addSplashingWaterEffect();
                 gameOver();
             }
         }
 
         function updateGame() {
+            if (game.gameOver) return;
+
             updateShark();
             checkCollisions();
             updateScore();
@@ -142,92 +143,68 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Render puzzle pieces
             game.puzzle.puzzlePieces.forEach((piece) => {
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.fillRect(piece.x, piece.y, 50, 50);
+                ctx.fillRect(piece.x, piece.y, piece.width, piece.height);
             });
+
+            // Render Finley
             ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
             ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
+
+            // Render Shark
             ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-            ctx.fillRect(game.shark.x, game.shark.y, 50, 50);
+            ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
+
+            // Render Score
             ctx.font = '24px Arial';
             ctx.fillStyle = 'white';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
             ctx.fillText(`Score: ${game.score}`, 10, 10);
+
+            // Render puzzle grid
             renderPuzzleGrid();
         }
 
         function gameLoop() {
             updateGame();
             render();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function finleyDialogue(dialogue) {
-            switch (dialogue) {
-                case "Woohoo!":
-                    console.log("Woohoo!");
-                    break;
-                case "Ha! Take that, shark!":
-                    console.log("Ha! Take that, shark!");
-                    break;
-                case "Oh no!":
-                    console.log("Oh no!");
-                    break;
+            if (!game.gameOver) {
+                requestAnimationFrame(gameLoop);
             }
-        }
-
-        function addSparkleEffect() {
-            // Add sparkle effect
-        }
-
-        function addSpeedLinesEffect() {
-            // Add speed lines effect
-        }
-
-        function addSplashingWaterEffect() {
-            // Add splashing water effect
-        }
-
-        function checkCollision(object1, object2) {
-            // Basic collision detection
-            if (object1.x < object2.x + object2.width &&
-                object1.x + object1.width > object2.x &&
-                object1.y < object2.y + object2.height &&
-                object1.y + object1.height > object2.y) {
-                return true;
-            }
-            return false;
-        }
-
-        function updateScore() {
-            // Update the score
-            game.score++;
         }
 
         function gameOver() {
+            console.log("Game Over!");
+            game.gameOver = true;
             document.getElementById("game-over-screen").style.display = "block";
             document.getElementById("final-score").innerText = game.score;
+            document.getElementById("game-canvas").style.display = "none";
         }
 
         function restartGame() {
+            console.log("Restarting game...");
             game.score = 0;
             game.level = 0;
             game.puzzle.puzzlePieces = [];
-            game.shark.speed = 1;
-            game.shark.aggression = 1;
-            game.finley.x = 0;
-            game.finley.y = 0;
+            game.shark = { speed: 1, aggression: 1, x: 100, y: 100, width: 50, height: 50 };
+            game.finley = { x: 50, y: 50, width: 50, height: 50 };
             document.getElementById("game-over-screen").style.display = "none";
             document.getElementById("game-canvas").style.display = "block";
             generatePuzzlePieces();
             generatePuzzle();
+            game.gameOver = false;
             gameLoop();
         }
 
+        function collectPiece(piece) {
+            game.puzzle.puzzlePieces = game.puzzle.puzzlePieces.filter(p => p !== piece);
+            game.score += 10;
+            console.log("Piece collected!");
+        }
+
         function renderPuzzleGrid() {
-            // Render puzzle grid
             for (let i = 0; i < 4; i++) {
                 for (let j = 0; j < 4; j++) {
                     if (game.puzzleGrid[i][j] !== null) {
@@ -243,37 +220,31 @@
             }
         }
 
+        function generatePuzzle() {
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    game.puzzleGrid[i][j] = Math.floor(Math.random() * 4) + 1;
+                }
+            }
+        }
+
         function solvePuzzle() {
-            // Check for matches in the puzzle grid
             for (let i = 0; i < 4; i++) {
                 for (let j = 0; j < 4; j++) {
                     if (game.puzzleGrid[i][j] !== null) {
                         // Check horizontal matches
                         if (j < 3 && game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 1]) {
-                            // Remove matched blocks
                             game.puzzleGrid[i][j] = null;
                             game.puzzleGrid[i][j + 1] = null;
-                            // Move Finley forward
                             game.finley.x += 100;
                         }
                         // Check vertical matches
                         if (i < 3 && game.puzzleGrid[i][j] === game.puzzleGrid[i + 1][j]) {
-                            // Remove matched blocks
                             game.puzzleGrid[i][j] = null;
                             game.puzzleGrid[i + 1][j] = null;
-                            // Move Finley forward
                             game.finley.y += 100;
                         }
                     }
-                }
-            }
-        }
-
-        function generatePuzzle() {
-            // Generate a 4x4 puzzle grid with random numbers
-            for (let i = 0; i < 4; i++) {
-                for (let j = 0; j < 4; j++) {
-                    game.puzzleGrid[i][j] = Math.floor(Math.random() * 4) + 1;
                 }
             }
         }
