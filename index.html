@@ -53,6 +53,7 @@
     <div id="game-over-screen" style="display: none;">
         <h1>Game Over!</h1>
         <p>Your score: <span id="final-score"></span></p>
+        <p id="game-status"></p>
         <button id="restart-button" onclick="restartGame()">Restart</button>
     </div>
 
@@ -84,7 +85,8 @@
                 },
                 score: 0,
                 gameOver: false,
-                puzzleSolved: false, // Flag to track if puzzle is solved
+                moves: 0,
+                matches: 0,
                 puzzleGrid: generatePuzzleGrid() // Initialize puzzle grid
             };
 
@@ -174,6 +176,7 @@
             game.gameOver = true;
             document.getElementById("game-over-screen").style.display = "block";
             document.getElementById("final-score").innerText = game.score;
+            document.getElementById("game-status").innerText = `You ${game.matches >= 5 ? 'won' : 'lost'} the game!`;
         }
 
         function restartGame() {
@@ -217,6 +220,8 @@
         }
 
         function handleBlockClick(event) {
+            if (game.gameOver) return;
+
             const row = parseInt(event.target.dataset.row);
             const col = parseInt(event.target.dataset.col);
 
@@ -224,17 +229,22 @@
                 const selectedRow = parseInt(selectedPiece.dataset.row);
                 const selectedCol = parseInt(selectedPiece.dataset.col);
 
-                // Swap blocks
-                if ((Math.abs(selectedRow - row) === 1 && selectedCol === col) || (Math.abs(selectedCol - col) === 1 && selectedRow === row)) {
+                // Swap blocks if they are adjacent
+                if ((Math.abs(selectedRow - row) === 1 && selectedCol === col) || 
+                    (Math.abs(selectedCol - col) === 1 && selectedRow === row)) {
                     // Perform swap
-                    game.puzzleGrid[row][col] = selectedPiece.style.backgroundColor;
-                    game.puzzleGrid[selectedRow][selectedCol] = event.target.style.backgroundColor;
+                    [game.puzzleGrid[row][col], game.puzzleGrid[selectedRow][selectedCol]] =
+                        [game.puzzleGrid[selectedRow][selectedCol], game.puzzleGrid[row][col]];
 
-                    // Check for matches
+                    game.moves++;
                     checkPuzzleSolved();
 
                     // Reset selection
                     selectedPiece = null;
+
+                    if (game.moves >= 7 && game.matches < 5) {
+                        gameOver();
+                    }
                 } else {
                     // Set new selected piece
                     selectedPiece = event.target;
@@ -257,14 +267,14 @@
                     } else {
                         if (matchLength >= 3) {
                             matched = true;
-                            removeMatchedBlocks(i, j - matchLength, 'horizontal');
+                            removeMatchedBlocks(i, j - matchLength, 'horizontal', matchLength);
                         }
                         matchLength = 1;
                     }
                 }
                 if (matchLength >= 3) {
                     matched = true;
-                    removeMatchedBlocks(i, 4 - matchLength, 'horizontal');
+                    removeMatchedBlocks(i, 4 - matchLength, 'horizontal', matchLength);
                 }
             }
 
@@ -277,35 +287,36 @@
                     } else {
                         if (matchLength >= 3) {
                             matched = true;
-                            removeMatchedBlocks(i - matchLength, j, 'vertical');
+                            removeMatchedBlocks(i - matchLength, j, 'vertical', matchLength);
                         }
                         matchLength = 1;
                     }
                 }
                 if (matchLength >= 3) {
                     matched = true;
-                    removeMatchedBlocks(4 - matchLength, j, 'vertical');
+                    removeMatchedBlocks(4 - matchLength, j, 'vertical', matchLength);
                 }
             }
 
             if (matched) {
                 dropBlocks();
                 game.score += 10;
-                if (checkIfPuzzleSolved()) {
+                game.matches++;
+                if (game.matches >= 5) {
                     game.puzzleSolved = true;
                 }
             }
         }
 
-        function removeMatchedBlocks(startRow, startCol, direction) {
+        function removeMatchedBlocks(startRow, startCol, direction, length) {
             if (direction === 'horizontal') {
                 let color = game.puzzleGrid[startRow][startCol];
-                for (let i = startCol; i < 4 && game.puzzleGrid[startRow][i] === color; i++) {
+                for (let i = startCol; i < startCol + length; i++) {
                     game.puzzleGrid[startRow][i] = null;
                 }
             } else if (direction === 'vertical') {
                 let color = game.puzzleGrid[startRow][startCol];
-                for (let i = startRow; i < 4 && game.puzzleGrid[i][startCol] === color; i++) {
+                for (let i = startRow; i < startRow + length; i++) {
                     game.puzzleGrid[i][startCol] = null;
                 }
             }
@@ -325,10 +336,6 @@
                 }
             }
             renderPuzzleGrid(); // Re-render puzzle grid
-        }
-
-        function checkIfPuzzleSolved() {
-            return game.puzzleGrid.every(row => row.every(color => color === null));
         }
     </script>
 </body>
