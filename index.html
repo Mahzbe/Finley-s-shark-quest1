@@ -33,11 +33,9 @@
         .puzzle-piece {
             width: 50px;
             height: 50px;
-            background-color: #555;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
             font-size: 18px;
         }
     </style>
@@ -59,6 +57,7 @@
 
     <script>
         let game, canvas, ctx, puzzleGridElement;
+        const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
 
         function initGame() {
             canvas = document.getElementById('game-canvas');
@@ -107,17 +106,15 @@
         }
 
         function updateFinley() {
-            // Define the corners
             const corners = [
-                { x: 0, y: 0 }, // Top-left
-                { x: canvas.width - game.finley.width, y: 0 }, // Top-right
-                { x: canvas.width - game.finley.width, y: canvas.height - game.finley.height }, // Bottom-right
-                { x: 0, y: canvas.height - game.finley.height } // Bottom-left
+                { x: 0, y: 0 },
+                { x: canvas.width - game.finley.width, y: 0 },
+                { x: canvas.width - game.finley.width, y: canvas.height - game.finley.height },
+                { x: 0, y: canvas.height - game.finley.height }
             ];
 
             const target = corners[game.finley.targetCorner];
 
-            // Move Finley towards the target corner
             if (game.finley.x < target.x) {
                 game.finley.x += game.finley.speed;
             } else if (game.finley.x > target.x) {
@@ -130,9 +127,8 @@
                 game.finley.y -= game.finley.speed;
             }
 
-            // If Finley reaches the target corner, switch to the next one
             if (Math.abs(game.finley.x - target.x) < 5 && Math.abs(game.finley.y - target.y) < 5) {
-                game.finley.targetCorner = (game.finley.targetCorner + 1) % 4; // Loop through corners
+                game.finley.targetCorner = (game.finley.targetCorner + 1) % 4;
             }
         }
 
@@ -142,27 +138,22 @@
             updateShark();
             updateFinley();
 
-            // Check for collision only if the puzzle is not solved
             if (!game.puzzleSolved && checkCollision(game.finley, game.shark)) {
                 gameOver();
             }
 
-            // Check if the puzzle is solved
             checkPuzzleSolved();
         }
 
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Render Finley
             ctx.fillStyle = 'green';
             ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
 
-            // Render Shark
             ctx.fillStyle = 'red';
             ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
 
-            // Render score
             ctx.fillStyle = 'white';
             ctx.fillText(`Score: ${game.score}`, 10, 10);
         }
@@ -199,7 +190,7 @@
             for (let i = 0; i < 4; i++) {
                 const row = [];
                 for (let j = 0; j < 4; j++) {
-                    row.push(Math.floor(Math.random() * 4) + 1); // Random number 1-4
+                    row.push(colors[Math.floor(Math.random() * colors.length)]);
                 }
                 grid.push(row);
             }
@@ -208,20 +199,98 @@
 
         function renderPuzzleGrid() {
             puzzleGridElement.innerHTML = '';
-            game.puzzleGrid.forEach(row => {
-                row.forEach(value => {
+            game.puzzleGrid.forEach((row, rowIndex) => {
+                row.forEach((color, colIndex) => {
                     const piece = document.createElement('div');
                     piece.className = 'puzzle-piece';
-                    piece.textContent = value;
+                    piece.style.backgroundColor = color;
+                    piece.dataset.row = rowIndex;
+                    piece.dataset.col = colIndex;
                     puzzleGridElement.appendChild(piece);
                 });
             });
         }
 
         function checkPuzzleSolved() {
-            // Example logic for puzzle solving (can be customized)
-            // For simplicity, let's assume the puzzle is solved if all pieces are '1'
-            game.puzzleSolved = game.puzzleGrid.flat().every(value => value === 1);
+            // Check for matches
+            let matched = false;
+
+            // Horizontal matches
+            for (let i = 0; i < 4; i++) {
+                let matchLength = 1;
+                for (let j = 1; j < 4; j++) {
+                    if (game.puzzleGrid[i][j] === game.puzzleGrid[i][j - 1]) {
+                        matchLength++;
+                    } else {
+                        if (matchLength >= 3) {
+                            matched = true;
+                            removeMatchedBlocks(i, j - matchLength, 'horizontal');
+                        }
+                        matchLength = 1;
+                    }
+                }
+                if (matchLength >= 3) {
+                    matched = true;
+                    removeMatchedBlocks(i, 4 - matchLength, 'horizontal');
+                }
+            }
+
+            // Vertical matches
+            for (let j = 0; j < 4; j++) {
+                let matchLength = 1;
+                for (let i = 1; i < 4; i++) {
+                    if (game.puzzleGrid[i][j] === game.puzzleGrid[i - 1][j]) {
+                        matchLength++;
+                    } else {
+                        if (matchLength >= 3) {
+                            matched = true;
+                            removeMatchedBlocks(i - matchLength, j, 'vertical');
+                        }
+                        matchLength = 1;
+                    }
+                }
+                if (matchLength >= 3) {
+                    matched = true;
+                    removeMatchedBlocks(4 - matchLength, j, 'vertical');
+                }
+            }
+
+            if (matched) {
+                // Update puzzle grid after removal
+                dropBlocks();
+                renderPuzzleGrid();
+            }
+
+            game.puzzleSolved = !game.puzzleGrid.flat().includes(null);
+        }
+
+        function removeMatchedBlocks(startRow, startCol, direction) {
+            if (direction === 'horizontal') {
+                let color = game.puzzleGrid[startRow][startCol];
+                for (let i = startCol; i < 4 && game.puzzleGrid[startRow][i] === color; i++) {
+                    game.puzzleGrid[startRow][i] = null;
+                }
+            } else if (direction === 'vertical') {
+                let color = game.puzzleGrid[startRow][startCol];
+                for (let i = startRow; i < 4 && game.puzzleGrid[i][startCol] === color; i++) {
+                    game.puzzleGrid[i][startCol] = null;
+                }
+            }
+        }
+
+        function dropBlocks() {
+            for (let col = 0; col < 4; col++) {
+                let emptyRow = 3;
+                for (let row = 3; row >= 0; row--) {
+                    if (game.puzzleGrid[row][col] !== null) {
+                        game.puzzleGrid[emptyRow][col] = game.puzzleGrid[row][col];
+                        emptyRow--;
+                    }
+                }
+                for (let i = emptyRow; i >= 0; i--) {
+                    game.puzzleGrid[i][col] = colors[Math.floor(Math.random() * colors.length)];
+                }
+            }
         }
     </script>
 </body>
