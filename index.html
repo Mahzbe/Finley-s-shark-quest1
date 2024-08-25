@@ -88,7 +88,8 @@
                 x: 50, // Initial position
                 y: 50,
                 width: 50,
-                height: 50
+                height: 50,
+                direction: 1 // 1: right, 2: down, 3: left, 4: up
             },
             score: 0,
             movesLeft: 7,
@@ -229,42 +230,39 @@
         }
 
         function updateFinleyPosition() {
+            switch (game.finley.direction) {
+                case 1: // Move right
+                    game.finley.x += 2;
+                    if (game.finley.x > 750) game.finley.direction = 2;
+                    break;
+                case 2: // Move down
+                    game.finley.y += 2;
+                    if (game.finley.y > 550) game.finley.direction = 3;
+                    break;
+                case 3: // Move left
+                    game.finley.x -= 2;
+                    if (game.finley.x < 50) game.finley.direction = 4;
+                    break;
+                case 4: // Move up
+                    game.finley.y -= 2;
+                    if (game.finley.y < 50) game.finley.direction = 1;
+                    break;
+            }
             document.getElementById('finley').style.left = game.finley.x + 'px';
             document.getElementById('finley').style.top = game.finley.y + 'px';
         }
 
-        function checkCollisions() {
-            if (checkCollision(game.finley, game.shark)) {
-                if (!game.puzzleSolved) {
-                    gameOver();
-                }
+        function updateGame() {
+            if (!game.puzzleSolved) {
+                updateSharkPosition();
+                updateFinleyPosition();
+                checkCollisions();
+                updateScore();
             }
         }
 
-        function checkCollision(object1, object2) {
-            return object1.x < object2.x + object2.width &&
-                   object1.x + object1.width > object2.x &&
-                   object1.y < object2.y + object2.height &&
-                   object1.y + object1.height > object2.y;
-        }
-
-        function updateGame() {
-            updateSharkPosition();
-            checkCollisions();
-            updateFinleyPosition();
-        }
-
         function render() {
-            const canvas = document.getElementById('game-canvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.font = '24px Arial';
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-            ctx.fillText(`Score: ${game.score}`, 10, 10);
+            // Rendering handled in update and renderPuzzleGrid
         }
 
         function gameLoop() {
