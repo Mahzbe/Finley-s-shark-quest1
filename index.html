@@ -5,40 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finley's Shark Quest</title>
     <style>
-        #game-canvas {
-            display: none;
-        }
-        #start-menu, #game-over-screen {
-            text-align: center;
-        }
-        .block {
-            width: 50px;
-            height: 50px;
-            display: inline-block;
-            margin: 1px;
-        }
-        #puzzle-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 50px);
-            grid-template-rows: repeat(4, 50px);
-            margin-top: 20px;
-        }
-        #shark, #finley {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-        }
-        #shark {
-            background-color: red;
-        }
-        #finley {
-            background-color: green;
-        }
-        #timer {
-            text-align: center;
-            font-size: 20px;
-            margin-top: 20px;
-        }
+        body { margin: 0; }
+        #game-canvas { border: 1px solid black; }
+        #start-menu, #game-over-screen { text-align: center; margin-top: 20px; }
+        #game-over-screen { display: none; }
+        #puzzle-container { position: relative; }
+        .block { width: 50px; height: 50px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -47,16 +19,15 @@
         <h1>Finley's Shark Quest</h1>
         <button id="start-button" onclick="startGame()">Start Game</button>
     </div>
-    <div id="game-over-screen" style="display: none;">
+    <div id="game-over-screen">
         <h1>Game Over!</h1>
         <p>Your score: <span id="final-score"></span></p>
         <button id="restart-button" onclick="restartGame()">Restart</button>
     </div>
-    <div id="puzzle-grid"></div>
-    <div id="shark"></div>
-    <div id="finley"></div>
-    <div id="timer">Moves Left: <span id="move-counter">7</span></div>
-
+    <div id="puzzle-container">
+        <div id="puzzle-grid"></div>
+        <div id="move-counter">Moves left: <span id="moves-left">7</span></div>
+    </div>
     <script>
         let game = {
             level: 0,
@@ -70,8 +41,10 @@
             shark: {
                 speed: 1,
                 aggression: 1,
-                x: 700,
-                y: 100
+                x: 650,
+                y: 100,
+                width: 50,
+                height: 50
             },
             finley: {
                 x: 50,
@@ -80,157 +53,142 @@
                 height: 50
             },
             score: 0,
-            puzzleGrid: [
-                [null, null, null, null],
-                [null, null, null, null],
-                [null, null, null, null],
-                [null, null, null, null]
-            ],
+            puzzleGrid: Array.from({ length: 4 }, () => Array(4).fill(null)),
             movesLeft: 7,
             puzzleSolved: false
         };
 
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
+        const puzzleContainer = document.getElementById('puzzle-grid');
+        const movesLeftElem = document.getElementById('moves-left');
 
         function startGame() {
-            console.log("Start game button clicked!");
-            document.getElementById("start-menu").style.display = "none";
-            document.getElementById("game-canvas").style.display = "block";
+            document.getElementById('start-menu').style.display = 'none';
+            document.getElementById('game-canvas').style.display = 'block';
+            document.getElementById('game-over-screen').style.display = 'none';
             generatePuzzle();
-            updatePuzzleGrid();
-            document.getElementById('puzzle-grid').style.display = 'grid';
-            document.getElementById('timer').style.display = 'block';
+            gameLoop();
+        }
+
+        function restartGame() {
+            game = {
+                level: 0,
+                puzzle: {
+                    puzzlePieces: [],
+                    sharkBehavior: {
+                        speed: 1,
+                        aggression: 1
+                    }
+                },
+                shark: {
+                    speed: 1,
+                    aggression: 1,
+                    x: 650,
+                    y: 100,
+                    width: 50,
+                    height: 50
+                },
+                finley: {
+                    x: 50,
+                    y: 50,
+                    width: 50,
+                    height: 50
+                },
+                score: 0,
+                puzzleGrid: Array.from({ length: 4 }, () => Array(4).fill(null)),
+                movesLeft: 7,
+                puzzleSolved: false
+            };
+            document.getElementById('game-over-screen').style.display = 'none';
+            document.getElementById('game-canvas').style.display = 'block';
+            generatePuzzle();
             gameLoop();
         }
 
         function generatePuzzle() {
-            // Generate a 4x4 puzzle grid with random colors
+            const colors = ['red', 'green', 'blue', 'yellow'];
             for (let i = 0; i < 4; i++) {
                 for (let j = 0; j < 4; j++) {
-                    const color = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
-                    game.puzzleGrid[i][j] = color;
+                    game.puzzleGrid[i][j] = colors[Math.floor(Math.random() * colors.length)];
                 }
             }
+            renderPuzzle();
         }
 
-        function updatePuzzleGrid() {
-            const gridElement = document.getElementById('puzzle-grid');
-            gridElement.innerHTML = ''; // Clear existing blocks
-
+        function renderPuzzle() {
+            puzzleContainer.innerHTML = '';
             for (let i = 0; i < 4; i++) {
                 for (let j = 0; j < 4; j++) {
                     const block = document.createElement('div');
-                    block.classList.add('block');
+                    block.className = 'block';
                     block.style.backgroundColor = game.puzzleGrid[i][j];
-                    block.dataset.index = i * 4 + j;
-                    block.onclick = handleBlockClick;
-                    gridElement.appendChild(block);
+                    block.style.left = `${j * 50}px`;
+                    block.style.top = `${i * 50}px`;
+                    block.style.position = 'absolute';
+                    block.addEventListener('click', () => handleBlockClick(i, j));
+                    puzzleContainer.appendChild(block);
                 }
             }
         }
 
-        function handleBlockClick(event) {
-            if (event.target.classList.contains('block')) {
-                const clickedBlock = event.target;
-                const index = clickedBlock.dataset.index;
-                const row = Math.floor(index / 4);
-                const col = index % 4;
+        function handleBlockClick(row, col) {
+            if (game.movesLeft <= 0 || game.puzzleSolved) return;
 
-                // Swap block with the one above
-                if (row > 0) {
-                    swapBlocks(row, col, row - 1, col);
-                    checkMatches();
-                }
-
-                // Update grid
-                updatePuzzleGrid();
-                updateMoveCounter();
-            }
-        }
-
-        function swapBlocks(row1, col1, row2, col2) {
-            const temp = game.puzzleGrid[row1][col1];
-            game.puzzleGrid[row1][col1] = game.puzzleGrid[row2][col2];
-            game.puzzleGrid[row2][col2] = temp;
-        }
-
-        function checkMatches() {
-            let matches = 0;
-            const matchedIndices = new Set();
-
-            // Check for horizontal and vertical matches
-            for (let i = 0; i < 4; i++) {
-                for (let j = 0; j < 4; j++) {
-                    const color = game.puzzleGrid[i][j];
-
-                    // Check horizontal
-                    if (j < 2 && color === game.puzzleGrid[i][j + 1] && color === game.puzzleGrid[i][j + 2]) {
-                        matchedIndices.add(i * 4 + j);
-                        matchedIndices.add(i * 4 + j + 1);
-                        matchedIndices.add(i * 4 + j + 2);
-                        matches++;
-                    }
-
-                    // Check vertical
-                    if (i < 2 && color === game.puzzleGrid[i + 1][j] && color === game.puzzleGrid[i + 2][j]) {
-                        matchedIndices.add(i * 4 + j);
-                        matchedIndices.add((i + 1) * 4 + j);
-                        matchedIndices.add((i + 2) * 4 + j);
-                        matches++;
-                    }
-                }
-            }
-
-            // Remove matched blocks
-            if (matches >= 5) {
-                game.puzzleSolved = true;
-                endGame();
-            } else {
-                // Remove matched blocks and shift others down
-                matchedIndices.forEach(index => {
-                    const row = Math.floor(index / 4);
-                    const col = index % 4;
-                    game.puzzleGrid[row][col] = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
-                });
-                updatePuzzleGrid();
-            }
-        }
-
-        function updateMoveCounter() {
             game.movesLeft--;
-            document.getElementById('move-counter').innerText = game.movesLeft;
+            movesLeftElem.textContent = game.movesLeft;
 
-            if (game.movesLeft <= 0 && !game.puzzleSolved) {
+            // Perform matching logic here
+            if (matchBlocks(row, col)) {
+                renderPuzzle();
+                if (checkPuzzleSolved()) {
+                    game.puzzleSolved = true;
+                    endGame();
+                }
+            } else if (game.movesLeft <= 0) {
                 gameOver();
             }
         }
 
-        function endGame() {
-            document.getElementById("game-over-screen").style.display = "block";
-            document.getElementById("final-score").innerText = game.score;
+        function matchBlocks(row, col) {
+            // Matching logic here (simplified)
+            const color = game.puzzleGrid[row][col];
+            let matched = 0;
+
+            // Horizontal match
+            for (let i = 0; i < 4; i++) {
+                if (game.puzzleGrid[row][i] === color) {
+                    matched++;
+                } else {
+                    matched = 0;
+                }
+                if (matched >= 3) return true;
+            }
+
+            // Vertical match
+            matched = 0;
+            for (let i = 0; i < 4; i++) {
+                if (game.puzzleGrid[i][col] === color) {
+                    matched++;
+                } else {
+                    matched = 0;
+                }
+                if (matched >= 3) return true;
+            }
+
+            return false;
         }
 
-        function gameOver() {
-            document.getElementById("game-over-screen").style.display = "block";
-            document.getElementById("final-score").innerText = game.score;
-        }
-
-        function restartGame() {
-            game.score = 0;
-            game.level = 0;
-            game.puzzle.puzzlePieces = [];
-            game.shark.speed = 1;
-            game.shark.aggression = 1;
-            game.finley.x = 50;
-            game.finley.y = 50;
-            game.shark.x = 700;
-            game.shark.y = 100;
-            game.movesLeft = 7;
-            game.puzzleSolved = false;
-            document.getElementById("game-over-screen").style.display = "none";
-            document.getElementById('puzzle-grid').style.display = 'grid';
-            startGame();
+        function checkPuzzleSolved() {
+            const matches = 0;
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    if (matchBlocks(i, j)) {
+                        return true;
+                    }
+                }
+            }
+            return matches >= 5;
         }
 
         function updateSharkPosition() {
@@ -241,6 +199,7 @@
             if (distance > 0) {
                 const moveX = (dx / distance) * game.shark.speed;
                 const moveY = (dy / distance) * game.shark.speed;
+
                 game.shark.x += moveX;
                 game.shark.y += moveY;
 
@@ -258,8 +217,8 @@
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             if (distance > 0) {
-                const moveX = (dx / distance) * -3;
-                const moveY = (dy / distance) * -3;
+                const moveX = (dx / distance) * -2;
+                const moveY = (dy / distance) * -2;
 
                 game.finley.x += moveX;
                 game.finley.y += moveY;
@@ -299,6 +258,20 @@
                 return true;
             }
             return false;
+        }
+
+        function endGame() {
+            alert("Congratulations! You solved the puzzle.");
+            document.getElementById('game-canvas').style.display = 'none';
+            document.getElementById('game-over-screen').style.display = 'block';
+            document.getElementById('final-score').textContent = game.score;
+        }
+
+        function gameOver() {
+            alert("Game Over!");
+            document.getElementById('game-canvas').style.display = 'none';
+            document.getElementById('game-over-screen').style.display = 'block';
+            document.getElementById('final-score').textContent = game.score;
         }
     </script>
 </body>
