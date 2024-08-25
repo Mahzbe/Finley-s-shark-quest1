@@ -225,7 +225,7 @@
             const dx = game.finley.x - game.shark.x;
             const dy = game.finley.y - game.shark.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            
+
             if (distance > 0) {
                 const moveX = (dx / distance) * game.shark.speed;
                 const moveY = (dy / distance) * game.shark.speed;
@@ -237,51 +237,26 @@
         }
 
         function updateFinleyPosition() {
-            switch (game.finley.direction) {
-                case 1: // Move right
-                    game.finley.x += 2;
-                    if (game.finley.x > 750) game.finley.direction = 2;
-                    break;
-                case 2: // Move down
-                    game.finley.y += 2;
-                    if (game.finley.y > 550) game.finley.direction = 3;
-                    break;
-                case 3: // Move left
-                    game.finley.x -= 2;
-                    if (game.finley.x < 50) game.finley.direction = 4;
-                    break;
-                case 4: // Move up
-                    game.finley.y -= 2;
-                    if (game.finley.y < 50) game.finley.direction = 1;
-                    break;
-            }
-            document.getElementById('finley').style.left = game.finley.x + 'px';
-            document.getElementById('finley').style.top = game.finley.y + 'px';
-        }
+            const dx = game.finley.x - game.shark.x;
+            const dy = game.finley.y - game.shark.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                const moveX = (dx / distance) * -2;
+                const moveY = (dy / distance) * -2;
+                game.finley.x += moveX;
+                game.finley.y += moveY;
 
-        function updateGame() {
-            if (!game.puzzleSolved) {
-                updateSharkPosition();
-                updateFinleyPosition();
-                checkCollisions();
-                updateScore();
-            }
-        }
+                // Ensure Finley stays within bounds
+                game.finley.x = Math.max(0, Math.min(750, game.finley.x));
+                game.finley.y = Math.max(0, Math.min(550, game.finley.y));
 
-        function render() {
-            // Rendering handled in update and renderPuzzleGrid
-        }
-
-        function gameLoop() {
-            if (!game.puzzleSolved) {
-                updateGame();
-                render();
-                requestAnimationFrame(gameLoop);
+                document.getElementById('finley').style.left = game.finley.x + 'px';
+                document.getElementById('finley').style.top = game.finley.y + 'px';
             }
         }
 
         function checkCollisions() {
-            // Check for collisions with the shark
             if (checkCollision(game.finley, game.shark)) {
                 gameOver();
             }
@@ -295,11 +270,6 @@
                 return true;
             }
             return false;
-        }
-
-        function updateScore() {
-            // Update the score
-            game.score++;
         }
 
         function gameOver() {
@@ -324,6 +294,15 @@
         }
 
         document.getElementById('puzzle-grid').addEventListener('click', handleBlockClick);
+
+        function gameLoop() {
+            if (!game.puzzleSolved) {
+                updateSharkPosition();
+                updateFinleyPosition();
+                checkCollisions();
+                requestAnimationFrame(gameLoop);
+            }
+        }
     </script>
 </body>
 </html>
