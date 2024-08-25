@@ -27,7 +27,6 @@
             canvas = document.getElementById('game-canvas');
             ctx = canvas.getContext('2d');
             game = {
-                level: 0,
                 shark: {
                     speed: 2,
                     x: 400,
@@ -40,7 +39,9 @@
                     x: 100,
                     y: 100,
                     width: 50,
-                    height: 50
+                    height: 50,
+                    directionX: 1, // 1 for right, -1 for left
+                    directionY: 1  // 1 for down, -1 for up
                 },
                 score: 0,
                 gameOver: false
@@ -64,21 +65,38 @@
         }
 
         function updateFinley() {
-            const deltaX = game.shark.x - game.finley.x;
-            const deltaY = game.shark.y - game.finley.y;
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            // Change direction randomly to avoid getting stuck
+            if (Math.random() < 0.02) { // 2% chance to change direction
+                game.finley.directionX = Math.random() > 0.5 ? 1 : -1;
+                game.finley.directionY = Math.random() > 0.5 ? 1 : -1;
+            }
 
-            const speed = game.finley.speed;
-            game.finley.x -= (deltaX / distance) * speed;
-            game.finley.y -= (deltaY / distance) * speed;
+            // Move Finley based on current direction
+            game.finley.x += game.finley.speed * game.finley.directionX;
+            game.finley.y += game.finley.speed * game.finley.directionY;
 
-            // Add some randomness to Finley's movement
-            game.finley.x += (Math.random() - 0.5) * 10;
-            game.finley.y += (Math.random() - 0.5) * 10;
+            // Reverse direction if Finley hits a wall
+            if (game.finley.x <= 0 || game.finley.x + game.finley.width >= canvas.width) {
+                game.finley.directionX *= -1;
+            }
+            if (game.finley.y <= 0 || game.finley.y + game.finley.height >= canvas.height) {
+                game.finley.directionY *= -1;
+            }
 
-            // Ensure Finley stays within canvas bounds
-            game.finley.x = Math.max(0, Math.min(canvas.width - game.finley.width, game.finley.x));
-            game.finley.y = Math.max(0, Math.min(canvas.height - game.finley.height, game.finley.y));
+            // Additional logic to move away from corners
+            if (game.finley.x <= 50 && game.finley.y <= 50) {
+                game.finley.directionX = 1;
+                game.finley.directionY = 1;
+            } else if (game.finley.x >= canvas.width - 100 && game.finley.y <= 50) {
+                game.finley.directionX = -1;
+                game.finley.directionY = 1;
+            } else if (game.finley.x <= 50 && game.finley.y >= canvas.height - 100) {
+                game.finley.directionX = 1;
+                game.finley.directionY = -1;
+            } else if (game.finley.x >= canvas.width - 100 && game.finley.y >= canvas.height - 100) {
+                game.finley.directionX = -1;
+                game.finley.directionY = -1;
+            }
         }
 
         function updateGame() {
