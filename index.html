@@ -29,6 +29,11 @@
     <div id="puzzle-container"></div>
     <div id="move-counter">Moves left: <span id="moves-left">7</span></div>
     <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const puzzleContainer = document.getElementById('puzzle-container');
+        const movesLeftElem = document.getElementById('moves-left');
+
         let game = {
             level: 0,
             puzzleGrid: Array.from({ length: 4 }, () => Array(4).fill(null)),
@@ -36,15 +41,10 @@
             matchesFound: 0,
             puzzleSolved: false,
             finley: { x: 50, y: 50, width: 50, height: 50 },
-            shark: { x: 650, y: 100, width: 50, height: 50, speed: 1 },
-            moveInterval: 0,
-            finleyDirection: 1 // 1 = right, -1 = left
+            shark: { x: 650, y: 100, width: 50, height: 50, speed: 2 },
+            finleyDirection: 1,
+            lastMoveTime: 0
         };
-
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-        const puzzleContainer = document.getElementById('puzzle-container');
-        const movesLeftElem = document.getElementById('moves-left');
 
         function startGame() {
             document.getElementById('start-menu').style.display = 'none';
@@ -55,6 +55,7 @@
             game.matchesFound = 0;
             game.puzzleSolved = false;
             game.finleyDirection = 1;
+            game.lastMoveTime = performance.now();
             generatePuzzle();
             gameLoop();
         }
@@ -67,9 +68,9 @@
                 matchesFound: 0,
                 puzzleSolved: false,
                 finley: { x: 50, y: 50, width: 50, height: 50 },
-                shark: { x: 650, y: 100, width: 50, height: 50, speed: 1 },
-                moveInterval: 0,
-                finleyDirection: 1 // 1 = right, -1 = left
+                shark: { x: 650, y: 100, width: 50, height: 50, speed: 2 },
+                finleyDirection: 1,
+                lastMoveTime: 0
             };
             document.getElementById('game-over-screen').style.display = 'none';
             document.getElementById('game-canvas').style.display = 'block';
@@ -168,23 +169,27 @@
         }
 
         function updateFinleyPosition() {
-            // Finley moves around the screen in a loop
-            const moveAmount = 2;
-            if (game.finleyDirection === 1) {
-                game.finley.x += moveAmount;
-                if (game.finley.x + game.finley.width >= canvas.width) {
-                    game.finleyDirection = -1;
+            const now = performance.now();
+            if (now - game.lastMoveTime > 50) { // Update every 50ms
+                const moveAmount = 2;
+                if (game.finleyDirection === 1) {
+                    game.finley.x += moveAmount;
+                    if (game.finley.x + game.finley.width >= canvas.width) {
+                        game.finleyDirection = -1;
+                    }
+                } else {
+                    game.finley.x -= moveAmount;
+                    if (game.finley.x <= 0) {
+                        game.finleyDirection = 1;
+                    }
                 }
-            } else {
-                game.finley.x -= moveAmount;
-                if (game.finley.x <= 0) {
-                    game.finleyDirection = 1;
-                }
-            }
 
-            game.finley.y += moveAmount;
-            if (game.finley.y + game.finley.height >= canvas.height) {
-                game.finley.y = 0;
+                game.finley.y += moveAmount;
+                if (game.finley.y + game.finley.height >= canvas.height) {
+                    game.finley.y = 0;
+                }
+
+                game.lastMoveTime = now;
             }
         }
 
