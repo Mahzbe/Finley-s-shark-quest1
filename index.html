@@ -38,6 +38,7 @@
             finley: { x: 50, y: 50, width: 50, height: 50 },
             shark: { x: 650, y: 100, width: 50, height: 50, speed: 1 },
             moveInterval: 0,
+            finleyDirection: 1 // 1 = right, -1 = left
         };
 
         const canvas = document.getElementById('game-canvas');
@@ -53,6 +54,7 @@
             movesLeftElem.textContent = game.movesLeft;
             game.matchesFound = 0;
             game.puzzleSolved = false;
+            game.finleyDirection = 1;
             generatePuzzle();
             gameLoop();
         }
@@ -67,6 +69,7 @@
                 finley: { x: 50, y: 50, width: 50, height: 50 },
                 shark: { x: 650, y: 100, width: 50, height: 50, speed: 1 },
                 moveInterval: 0,
+                finleyDirection: 1 // 1 = right, -1 = left
             };
             document.getElementById('game-over-screen').style.display = 'none';
             document.getElementById('game-canvas').style.display = 'block';
@@ -165,30 +168,23 @@
         }
 
         function updateFinleyPosition() {
-            // Finley moves around the screen in a pattern
-            const movementPattern = [
-                { x: 50, y: 50 },
-                { x: canvas.width - game.finley.width - 50, y: 50 },
-                { x: canvas.width - game.finley.width - 50, y: canvas.height - game.finley.height - 50 },
-                { x: 50, y: canvas.height - game.finley.height - 50 },
-            ];
-
-            const target = movementPattern[game.moveInterval % movementPattern.length];
-
-            const dx = target.x - game.finley.x;
-            const dy = target.y - game.finley.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance > 0) {
-                const moveX = (dx / distance) * 2;
-                const moveY = (dy / distance) * 2;
-
-                game.finley.x += moveX;
-                game.finley.y += moveY;
-
-                if (Math.abs(game.finley.x - target.x) < 1 && Math.abs(game.finley.y - target.y) < 1) {
-                    game.moveInterval++;
+            // Finley moves around the screen in a loop
+            const moveAmount = 2;
+            if (game.finleyDirection === 1) {
+                game.finley.x += moveAmount;
+                if (game.finley.x + game.finley.width >= canvas.width) {
+                    game.finleyDirection = -1;
                 }
+            } else {
+                game.finley.x -= moveAmount;
+                if (game.finley.x <= 0) {
+                    game.finleyDirection = 1;
+                }
+            }
+
+            game.finley.y += moveAmount;
+            if (game.finley.y + game.finley.height >= canvas.height) {
+                game.finley.y = 0;
             }
         }
 
@@ -204,9 +200,7 @@
 
         function checkCollisions() {
             if (checkCollision(game.finley, game.shark)) {
-                if (game.movesLeft <= 0) {
-                    endGame();
-                } else {
+                if (game.movesLeft > 0) {
                     gameOver();
                 }
             }
