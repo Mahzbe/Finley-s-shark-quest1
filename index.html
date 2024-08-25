@@ -29,6 +29,7 @@
             width: 100%;
             padding-top: 100%;
             position: relative;
+            cursor: pointer;
         }
         .block div {
             position: absolute;
@@ -78,14 +79,14 @@
             shark: {
                 speed: 1,
                 aggression: 1,
-                x: 0,
-                y: 0,
+                x: 700, // Initial position
+                y: 100,
                 width: 50,
                 height: 50
             },
             finley: {
-                x: 0,
-                y: 0,
+                x: 50, // Initial position
+                y: 50,
                 width: 50,
                 height: 50
             },
@@ -98,12 +99,13 @@
         const colors = ['red', 'blue', 'green', 'yellow'];
         let selectedPiece = null;
 
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-
         function startGame() {
             document.getElementById("start-menu").style.display = "none";
             document.getElementById("game-canvas").style.display = "block";
+            document.getElementById('finley').style.left = game.finley.x + 'px';
+            document.getElementById('finley').style.top = game.finley.y + 'px';
+            document.getElementById('shark').style.left = game.shark.x + 'px';
+            document.getElementById('shark').style.top = game.shark.y + 'px';
             generatePuzzle();
             renderPuzzleGrid();
             gameLoop();
@@ -239,15 +241,38 @@
             }
         }
 
+        function checkCollision(object1, object2) {
+            return object1.x < object2.x + object2.width &&
+                   object1.x + object1.width > object2.x &&
+                   object1.y < object2.y + object2.height &&
+                   object1.y + object1.height > object2.y;
+        }
+
         function updateGame() {
             updateSharkPosition();
-            updateFinleyPosition();
             checkCollisions();
+            updateFinleyPosition();
+        }
+
+        function render() {
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = '24px Arial';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(`Score: ${game.score}`, 10, 10);
         }
 
         function gameLoop() {
-            updateGame();
-            requestAnimationFrame(gameLoop);
+            if (!game.puzzleSolved) {
+                updateGame();
+                render();
+                requestAnimationFrame(gameLoop);
+            }
         }
 
         function gameOver() {
@@ -258,13 +283,15 @@
         function restartGame() {
             game.score = 0;
             game.level = 0;
-            game.puzzleGrid = Array.from({ length: 4 }, () => Array(4).fill(null));
+            game.puzzle.puzzlePieces = [];
+            game.shark.speed = 1;
+            game.shark.aggression = 1;
+            game.finley.x = 50;
+            game.finley.y = 50;
+            game.shark.x = 700;
+            game.shark.y = 100;
             game.movesLeft = 7;
             game.puzzleSolved = false;
-            game.shark.x = 0;
-            game.shark.y = 0;
-            game.finley.x = 0;
-            game.finley.y = 0;
             document.getElementById("game-over-screen").style.display = "none";
             startGame();
         }
