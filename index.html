@@ -49,6 +49,9 @@
         #shark {
             background-color: red;
         }
+        #puzzle-grid {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -79,13 +82,13 @@
             shark: {
                 speed: 1,
                 aggression: 1,
-                x: 700, // Initial position
+                x: 700,
                 y: 100,
                 width: 50,
                 height: 50
             },
             finley: {
-                x: 50, // Initial position
+                x: 50,
                 y: 50,
                 width: 50,
                 height: 50,
@@ -103,6 +106,10 @@
         function startGame() {
             document.getElementById("start-menu").style.display = "none";
             document.getElementById("game-canvas").style.display = "block";
+            game.finley.x = 50;
+            game.finley.y = 50;
+            game.shark.x = 700;
+            game.shark.y = 100;
             document.getElementById('finley').style.left = game.finley.x + 'px';
             document.getElementById('finley').style.top = game.finley.y + 'px';
             document.getElementById('shark').style.left = game.shark.x + 'px';
@@ -271,6 +278,28 @@
                 render();
                 requestAnimationFrame(gameLoop);
             }
+        }
+
+        function checkCollisions() {
+            // Check for collisions with the shark
+            if (checkCollision(game.finley, game.shark)) {
+                gameOver();
+            }
+        }
+
+        function checkCollision(object1, object2) {
+            if (object1.x < object2.x + object2.width &&
+                object1.x + object1.width > object2.x &&
+                object1.y < object2.y + object2.height &&
+                object1.y + object1.height > object2.y) {
+                return true;
+            }
+            return false;
+        }
+
+        function updateScore() {
+            // Update the score
+            game.score++;
         }
 
         function gameOver() {
