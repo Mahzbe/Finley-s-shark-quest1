@@ -5,282 +5,145 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finley's Shark Quest</title>
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #000;
-            color: #fff;
-        }
-        #game-canvas {
-            display: block;
-            background-color: #333;
-            margin: 0 auto;
-        }
-        #start-menu, #game-over-screen {
-            text-align: center;
-            color: #fff;
-        }
+        /* Existing styles */
         #puzzle-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 10px;
+            display: none;
         }
-        #puzzle-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 50px);
-            gap: 5px;
-        }
-        .puzzle-piece {
+        .block {
             width: 50px;
             height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
+            display: inline-block;
             cursor: pointer;
         }
+        .selected {
+            border: 2px solid black;
+        }
         #timer {
-            font-size: 24px;
+            font-size: 20px;
             margin-top: 10px;
+        }
+        #win-screen {
+            display: none;
+            text-align: center;
+            font-size: 24px;
         }
     </style>
 </head>
 <body>
-    <canvas id="game-canvas" width="800" height="500"></canvas>
-    <div id="puzzle-container">
-        <div id="puzzle-grid"></div>
-        <div id="timer">Moves Left: 7</div>
-    </div>
-    <div id="start-menu">
+    <canvas id="game-canvas" width="800" height="600" style="display: none;"></canvas>
+    <div id="start-menu" style="display: block;">
         <h1>Finley's Shark Quest</h1>
         <button id="start-button" onclick="startGame()">Start Game</button>
     </div>
     <div id="game-over-screen" style="display: none;">
         <h1>Game Over!</h1>
         <p>Your score: <span id="final-score"></span></p>
-        <p id="game-status"></p>
         <button id="restart-button" onclick="restartGame()">Restart</button>
     </div>
-
+    <div id="win-screen">
+        <h1>Congratulations!</h1>
+        <p>You won the game!</p>
+        <button id="play-again-button" onclick="restartGame()">Play Again</button>
+    </div>
+    <div id="puzzle-container">
+        <div id="puzzle-grid"></div>
+        <div id="timer">Moves left: <span id="moves-count">7</span></div>
+    </div>
     <script>
-        let game, canvas, ctx, puzzleGridElement, timerElement;
-        const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
-        let selectedPiece = null;
+        let game = {
+            level: 0,
+            puzzle: {
+                puzzlePieces: [],
+                sharkBehavior: {
+                    speed: 1,
+                    aggression: 1
+                }
+            },
+            shark: {
+                speed: 1,
+                aggression: 1,
+                x: 0,
+                y: 0
+            },
+            finley: {
+                x: 0,
+                y: 0,
+                width: 50,
+                height: 50
+            },
+            score: 0,
+            movesLeft: 7,
+            matches: 0,
+            puzzleGrid: generatePuzzleGrid(),
+            puzzleSolved: false
+        };
 
-        function initGame() {
-            canvas = document.getElementById('game-canvas');
-            ctx = canvas.getContext('2d');
-            puzzleGridElement = document.getElementById('puzzle-grid');
-            timerElement = document.getElementById('timer');
-            
-            game = {
-                shark: {
-                    speed: 2,
-                    x: 400,
-                    y: 300,
-                    width: 50,
-                    height: 50
-                },
-                finley: {
-                    speed: 3,
-                    x: 100,
-                    y: 100,
-                    width: 50,
-                    height: 50,
-                    targetCorner: 0 // Start with the first corner (top-left)
-                },
-                score: 0,
-                gameOver: false,
-                moves: 7, // Initialize move limit
-                matches: 0,
-                puzzleGrid: generatePuzzleGrid(),
-                puzzleSolved: false
-            };
+        const colors = ['red', 'green', 'blue', 'yellow'];
 
-            renderPuzzleGrid();
-            updateTimer();
-        }
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
 
         function startGame() {
             document.getElementById("start-menu").style.display = "none";
-            initGame();
+            document.getElementById("game-canvas").style.display = "block";
+            document.getElementById("puzzle-container").style.display = "block";
+            generatePuzzle();
             gameLoop();
         }
 
-        function updateTimer() {
-            timerElement.textContent = `Moves Left: ${game.moves}`;
-        }
-
-        function updateShark() {
-            const deltaX = game.finley.x - game.shark.x;
-            const deltaY = game.finley.y - game.shark.y;
-            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-            const speed = game.shark.speed;
-            game.shark.x += (deltaX / distance) * speed;
-            game.shark.y += (deltaY / distance) * speed;
-        }
-
-        function updateFinley() {
-            const corners = [
-                { x: 0, y: 0 },
-                { x: canvas.width - game.finley.width, y: 0 },
-                { x: canvas.width - game.finley.width, y: canvas.height - game.finley.height },
-                { x: 0, y: canvas.height - game.finley.height }
-            ];
-
-            const target = corners[game.finley.targetCorner];
-
-            if (game.finley.x < target.x) {
-                game.finley.x += game.finley.speed;
-            } else if (game.finley.x > target.x) {
-                game.finley.x -= game.finley.speed;
-            }
-
-            if (game.finley.y < target.y) {
-                game.finley.y += game.finley.speed;
-            } else if (game.finley.y > target.y) {
-                game.finley.y -= game.finley.speed;
-            }
-
-            if (Math.abs(game.finley.x - target.x) < 5 && Math.abs(game.finley.y - target.y) < 5) {
-                game.finley.targetCorner = (game.finley.targetCorner + 1) % 4;
-            }
-        }
-
-        function updateGame() {
-            if (game.gameOver) return;
-
-            updateShark();
-            updateFinley();
-
-            if (checkCollision(game.finley, game.shark)) {
-                gameOver();
-            }
-
-            if (!game.puzzleSolved) {
-                checkPuzzleSolved();
-            }
-        }
-
-        function render() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw Finley
-            ctx.fillStyle = 'green';
-            ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
-
-            // Draw Shark
-            ctx.fillStyle = 'red';
-            ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
-
-            // Draw Score
-            ctx.fillStyle = 'white';
-            ctx.fillText(`Score: ${game.score}`, 10, 10);
-        }
-
-        function gameLoop() {
-            updateGame();
-            render();
-            if (!game.gameOver) {
-                requestAnimationFrame(gameLoop);
-            }
-        }
-
-        function gameOver() {
-            game.gameOver = true;
-            document.getElementById("game-over-screen").style.display = "block";
-            document.getElementById("final-score").innerText = game.score;
-            document.getElementById("game-status").innerText = `You ${game.matches >= 5 ? 'won' : 'lost'} the game!`;
-            if (game.moves <= 0) {
-                document.getElementById("game-status").innerText += ' No moves left!';
-            }
-        }
-
-        function restartGame() {
-            document.getElementById("game-over-screen").style.display = "none";
-            initGame();
-            gameLoop();
-        }
-
-        function checkCollision(obj1, obj2) {
-            return obj1.x < obj2.x + obj2.width &&
-                   obj1.x + obj1.width > obj2.x &&
-                   obj1.y < obj2.y + obj2.height &&
-                   obj1.y + obj1.height > obj2.y;
-        }
-
-        function generatePuzzleGrid() {
-            const grid = [];
+        function generatePuzzle() {
+            // Generate a 4x4 puzzle grid with random colors
             for (let i = 0; i < 4; i++) {
-                const row = [];
                 for (let j = 0; j < 4; j++) {
-                    row.push(colors[Math.floor(Math.random() * colors.length)]);
+                    game.puzzleGrid[i][j] = colors[Math.floor(Math.random() * colors.length)];
                 }
-                grid.push(row);
             }
-            return grid;
+            renderPuzzleGrid();
         }
 
         function renderPuzzleGrid() {
-            puzzleGridElement.innerHTML = '';
-            game.puzzleGrid.forEach((row, rowIndex) => {
-                row.forEach((color, colIndex) => {
-                    const piece = document.createElement('div');
-                    piece.className = 'puzzle-piece';
-                    piece.style.backgroundColor = color;
-                    piece.dataset.row = rowIndex;
-                    piece.dataset.col = colIndex;
-                    piece.addEventListener('click', handleBlockClick);
-                    puzzleGridElement.appendChild(piece);
-                });
-            });
+            const puzzleGridElement = document.getElementById('puzzle-grid');
+            puzzleGridElement.innerHTML = ''; // Clear previous grid
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const block = document.createElement('div');
+                    block.classList.add('block');
+                    block.style.backgroundColor = game.puzzleGrid[i][j];
+                    block.dataset.row = i;
+                    block.dataset.col = j;
+                    puzzleGridElement.appendChild(block);
+                }
+            }
         }
 
         function handleBlockClick(event) {
-            if (game.gameOver) return;
+            if (event.target.classList.contains('block')) {
+                const row = event.target.dataset.row;
+                const col = event.target.dataset.col;
 
-            const row = parseInt(event.target.dataset.row);
-            const col = parseInt(event.target.dataset.col);
-
-            if (selectedPiece) {
-                const selectedRow = parseInt(selectedPiece.dataset.row);
-                const selectedCol = parseInt(selectedPiece.dataset.col);
-
-                // Swap blocks if they are adjacent
-                if ((Math.abs(selectedRow - row) === 1 && selectedCol === col) || 
-                    (Math.abs(selectedCol - col) === 1 && selectedRow === row)) {
-                    // Perform swap
-                    [game.puzzleGrid[row][col], game.puzzleGrid[selectedRow][selectedCol]] =
-                        [game.puzzleGrid[selectedRow][selectedCol], game.puzzleGrid[row][col]];
-
-                    // Check for matches
+                if (selectedPiece) {
+                    // Swap the colors
+                    const tempColor = game.puzzleGrid[selectedPiece.dataset.row][selectedPiece.dataset.col];
+                    game.puzzleGrid[selectedPiece.dataset.row][selectedPiece.dataset.col] = game.puzzleGrid[row][col];
+                    game.puzzleGrid[row][col] = tempColor;
+                    renderPuzzleGrid();
                     checkMatches();
-                    game.moves--;
-                    updateTimer();
-
-                    if (game.moves <= 0 && !game.puzzleSolved) {
-                        gameOver();
-                    }
-
-                    // Clear selection
+                    game.movesLeft--;
+                    document.getElementById('moves-count').innerText = game.movesLeft;
                     selectedPiece.classList.remove('selected');
                     selectedPiece = null;
-                } else {
-                    // Select new piece
-                    if (selectedPiece) {
-                        selectedPiece.classList.remove('selected');
+
+                    if (game.movesLeft <= 0 && !game.puzzleSolved) {
+                        gameOver();
                     }
+                } else {
                     event.target.classList.add('selected');
                     selectedPiece = event.target;
                 }
-            } else {
-                // Select new piece
-                event.target.classList.add('selected');
-                selectedPiece = event.target;
             }
         }
+
+        document.getElementById('puzzle-grid').addEventListener('click', handleBlockClick);
 
         function checkMatches() {
             let matched = false;
@@ -330,7 +193,7 @@
                 game.score += 10;
                 game.matches++;
                 if (game.matches >= 5) {
-                    game.puzzleSolved = true;
+                    gameWon();
                 }
             }
         }
@@ -361,6 +224,39 @@
                 }
             }
             renderPuzzleGrid(); // Re-render puzzle grid
+        }
+
+        function gameWon() {
+            document.getElementById("win-screen").style.display = "block";
+            document.getElementById("game-canvas").style.display = "none";
+            document.getElementById("puzzle-container").style.display = "none";
+        }
+
+        function gameOver() {
+            document.getElementById("game-over-screen").style.display = "block";
+            document.getElementById("final-score").innerText = game.score;
+            document.getElementById("game-canvas").style.display = "none";
+            document.getElementById("puzzle-container").style.display = "none";
+        }
+
+        function restartGame() {
+            game.score = 0;
+            game.matches = 0;
+            game.movesLeft = 7;
+            game.puzzleGrid = generatePuzzleGrid(); // Regenerate the puzzle grid
+            document.getElementById("win-screen").style.display = "none";
+            document.getElementById("game-over-screen").style.display = "none";
+            document.getElementById("start-menu").style.display = "block";
+            document.getElementById("game-canvas").style.display = "none";
+            document.getElementById("puzzle-container").style.display = "none";
+        }
+
+        function generatePuzzleGrid() {
+            let grid = [];
+            for (let i = 0; i < 4; i++) {
+                grid[i] = [];
+            }
+            return grid;
         }
     </script>
 </body>
