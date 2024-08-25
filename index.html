@@ -22,7 +22,8 @@
         }
         #puzzle-container {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
             margin-top: 10px;
         }
         #puzzle-grid {
@@ -39,12 +40,17 @@
             font-size: 18px;
             cursor: pointer;
         }
+        #timer {
+            font-size: 24px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <canvas id="game-canvas" width="800" height="500"></canvas>
     <div id="puzzle-container">
         <div id="puzzle-grid"></div>
+        <div id="timer">Moves Left: 7</div>
     </div>
     <div id="start-menu">
         <h1>Finley's Shark Quest</h1>
@@ -58,14 +64,16 @@
     </div>
 
     <script>
-        let game, canvas, ctx, puzzleGridElement;
+        let game, canvas, ctx, puzzleGridElement, timerElement;
         const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
         let selectedPiece = null;
+        let timerInterval;
 
         function initGame() {
             canvas = document.getElementById('game-canvas');
             ctx = canvas.getContext('2d');
             puzzleGridElement = document.getElementById('puzzle-grid');
+            timerElement = document.getElementById('timer');
             
             game = {
                 shark: {
@@ -85,18 +93,34 @@
                 },
                 score: 0,
                 gameOver: false,
-                moves: 0,
+                moves: 7, // Initialize move limit
                 matches: 0,
-                puzzleGrid: generatePuzzleGrid() // Initialize puzzle grid
+                puzzleGrid: generatePuzzleGrid(),
+                timer: 7 // Initialize timer
             };
 
             renderPuzzleGrid();
+            startTimer();
         }
 
         function startGame() {
             document.getElementById("start-menu").style.display = "none";
             initGame();
             gameLoop();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (game.gameOver) return;
+
+                game.timer--;
+                timerElement.textContent = `Moves Left: ${game.timer}`;
+
+                if (game.timer <= 0) {
+                    clearInterval(timerInterval);
+                    gameOver();
+                }
+            }, 1000);
         }
 
         function updateShark() {
@@ -142,7 +166,7 @@
             updateShark();
             updateFinley();
 
-            if (!game.puzzleSolved && checkCollision(game.finley, game.shark)) {
+            if (checkCollision(game.finley, game.shark)) {
                 gameOver();
             }
 
@@ -177,10 +201,14 @@
             document.getElementById("game-over-screen").style.display = "block";
             document.getElementById("final-score").innerText = game.score;
             document.getElementById("game-status").innerText = `You ${game.matches >= 5 ? 'won' : 'lost'} the game!`;
+            if (game.timer <= 0) {
+                document.getElementById("game-status").innerText += ' Time ran out!';
+            }
         }
 
         function restartGame() {
             document.getElementById("game-over-screen").style.display = "none";
+            clearInterval(timerInterval);
             initGame();
             gameLoop();
         }
@@ -236,26 +264,33 @@
                     [game.puzzleGrid[row][col], game.puzzleGrid[selectedRow][selectedCol]] =
                         [game.puzzleGrid[selectedRow][selectedCol], game.puzzleGrid[row][col]];
 
-                    game.moves++;
-                    checkPuzzleSolved();
+                    // Check for matches
+                    checkMatches();
+                    game.moves--;
 
-                    // Reset selection
-                    selectedPiece = null;
-
-                    if (game.moves >= 7 && game.matches < 5) {
+                    if (game.moves <= 0 && !game.puzzleSolved) {
                         gameOver();
                     }
+
+                    // Clear selection
+                    selectedPiece.classList.remove('selected');
+                    selectedPiece = null;
                 } else {
-                    // Set new selected piece
+                    // Select new piece
+                    if (selectedPiece) {
+                        selectedPiece.classList.remove('selected');
+                    }
+                    event.target.classList.add('selected');
                     selectedPiece = event.target;
                 }
             } else {
-                // Set new selected piece
+                // Select new piece
+                event.target.classList.add('selected');
                 selectedPiece = event.target;
             }
         }
 
-        function checkPuzzleSolved() {
+        function checkMatches() {
             let matched = false;
 
             // Horizontal matches
@@ -310,12 +345,10 @@
 
         function removeMatchedBlocks(startRow, startCol, direction, length) {
             if (direction === 'horizontal') {
-                let color = game.puzzleGrid[startRow][startCol];
                 for (let i = startCol; i < startCol + length; i++) {
                     game.puzzleGrid[startRow][i] = null;
                 }
             } else if (direction === 'vertical') {
-                let color = game.puzzleGrid[startRow][startCol];
                 for (let i = startRow; i < startRow + length; i++) {
                     game.puzzleGrid[i][startCol] = null;
                 }
