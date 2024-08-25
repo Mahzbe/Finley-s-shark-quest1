@@ -36,7 +36,8 @@
             matchesFound: 0,
             puzzleSolved: false,
             finley: { x: 50, y: 50, width: 50, height: 50 },
-            shark: { x: 650, y: 100, width: 50, height: 50, speed: 1 }
+            shark: { x: 650, y: 100, width: 50, height: 50, speed: 1 },
+            moveInterval: 0,
         };
 
         const canvas = document.getElementById('game-canvas');
@@ -48,6 +49,10 @@
             document.getElementById('start-menu').style.display = 'none';
             document.getElementById('game-canvas').style.display = 'block';
             document.getElementById('game-over-screen').style.display = 'none';
+            game.movesLeft = 7;
+            movesLeftElem.textContent = game.movesLeft;
+            game.matchesFound = 0;
+            game.puzzleSolved = false;
             generatePuzzle();
             gameLoop();
         }
@@ -60,7 +65,8 @@
                 matchesFound: 0,
                 puzzleSolved: false,
                 finley: { x: 50, y: 50, width: 50, height: 50 },
-                shark: { x: 650, y: 100, width: 50, height: 50, speed: 1 }
+                shark: { x: 650, y: 100, width: 50, height: 50, speed: 1 },
+                moveInterval: 0,
             };
             document.getElementById('game-over-screen').style.display = 'none';
             document.getElementById('game-canvas').style.display = 'block';
@@ -100,7 +106,6 @@
             game.movesLeft--;
             movesLeftElem.textContent = game.movesLeft;
 
-            // Perform matching logic here
             if (matchBlocks(row, col)) {
                 game.matchesFound++;
                 if (game.matchesFound >= 5) {
@@ -160,20 +165,30 @@
         }
 
         function updateFinleyPosition() {
-            // Simple movement logic for Finley to avoid the shark
-            const dx = game.shark.x - game.finley.x;
-            const dy = game.shark.y - game.finley.y;
+            // Finley moves around the screen in a pattern
+            const movementPattern = [
+                { x: 50, y: 50 },
+                { x: canvas.width - game.finley.width - 50, y: 50 },
+                { x: canvas.width - game.finley.width - 50, y: canvas.height - game.finley.height - 50 },
+                { x: 50, y: canvas.height - game.finley.height - 50 },
+            ];
+
+            const target = movementPattern[game.moveInterval % movementPattern.length];
+
+            const dx = target.x - game.finley.x;
+            const dy = target.y - game.finley.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             if (distance > 0) {
-                const moveX = (dx / distance) * -2;
-                const moveY = (dy / distance) * -2;
+                const moveX = (dx / distance) * 2;
+                const moveY = (dy / distance) * 2;
 
                 game.finley.x += moveX;
                 game.finley.y += moveY;
 
-                game.finley.x = Math.max(0, Math.min(canvas.width - game.finley.width, game.finley.x));
-                game.finley.y = Math.max(0, Math.min(canvas.height - game.finley.height, game.finley.y));
+                if (Math.abs(game.finley.x - target.x) < 1 && Math.abs(game.finley.y - target.y) < 1) {
+                    game.moveInterval++;
+                }
             }
         }
 
@@ -217,17 +232,15 @@
         }
 
         function endGame() {
-            alert("Congratulations! You solved the puzzle.");
-            document.getElementById('game-canvas').style.display = 'none';
+            alert("Congratulations! You won!");
             document.getElementById('game-over-screen').style.display = 'block';
-            document.getElementById('final-score').textContent = game.score;
+            document.getElementById('final-score').textContent = `Matches: ${game.matchesFound}`;
         }
 
         function gameOver() {
             alert("Game Over!");
-            document.getElementById('game-canvas').style.display = 'none';
             document.getElementById('game-over-screen').style.display = 'block';
-            document.getElementById('final-score').textContent = game.score;
+            document.getElementById('final-score').textContent = `Matches: ${game.matchesFound}`;
         }
     </script>
 </body>
