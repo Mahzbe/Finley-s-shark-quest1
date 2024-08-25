@@ -5,192 +5,204 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finley's Shark Quest</title>
     <style>
-        /* Style adjustments */
         #game-canvas {
-            border: 1px solid black;
-            display: block;
-            margin: 0 auto;
+            border: 2px solid black;
         }
-
-        #game-over-screen {
-            text-align: center;
-            display: none;
-        }
-
-        #puzzle-container {
-            display: flex;
-            flex-wrap: wrap;
-            width: 200px;
-            margin: 20px auto;
-        }
-
-        .puzzle-block {
-            width: 50px;
-            height: 50px;
-            margin: 5px;
-            background-color: lightblue;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 18px;
-            cursor: pointer;
+        #puzzle-canvas {
+            border: 2px solid black;
         }
     </style>
 </head>
 <body>
-    <canvas id="game-canvas" width="400" height="300"></canvas>
-    <div id="puzzle-container"></div>
-    <div id="game-over-screen">
-        <h1>Game Over</h1>
-        <p id="final-score"></p>
-        <button onclick="restartGame()">Restart</button>
+    <canvas id="game-canvas" width="400" height="400"></canvas>
+    <canvas id="puzzle-canvas" width="400" height="400"></canvas>
+    <div id="game-over-screen" style="display: none;">
+        <h1>Game Over!</h1>
+        <button id="restart-button">Restart</button>
     </div>
-    
+
     <script>
-        // Game variables
-        let game = {
-            finley: { x: 50, y: 50, width: 20, height: 20, speed: 4 },
-            shark: { x: 300, y: 150, width: 30, height: 30, speed: 2 },
-            gameStarted: true,
-            movesLeft: 7,
-            matchesFound: 0,
-            puzzleBlocks: [],
-            colors: ['red', 'green', 'blue', 'yellow']
-        };
+        const gameCanvas = document.getElementById('game-canvas');
+        const gameCtx = gameCanvas.getContext('2d');
+        const puzzleCanvas = document.getElementById('puzzle-canvas');
+        const puzzleCtx = puzzleCanvas.getContext('2d');
 
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-        const puzzleContainer = document.getElementById('puzzle-container');
+        const finley = { x: 50, y: 50, width: 20, height: 20, speed: 3 };
+        const shark = { x: 350, y: 350, width: 20, height: 20, speed: 2 };
+        let moveCounter = 7;
+        let matches = 0;
 
-        function initPuzzle() {
-            game.puzzleBlocks = [];
-            for (let i = 0; i < 16; i++) {
-                const block = document.createElement('div');
-                block.className = 'puzzle-block';
-                block.style.backgroundColor = game.colors[Math.floor(Math.random() * game.colors.length)];
-                block.onclick = () => handleBlockClick(block, i);
-                puzzleContainer.appendChild(block);
-                game.puzzleBlocks.push(block);
-            }
-        }
+        // Puzzle grid
+        const gridRows = 6;
+        const gridCols = 6;
+        const blockSize = 60;
+        let grid = [];
 
-        function handleBlockClick(block, index) {
-            // Handle puzzle block click
-            game.movesLeft--;
-            document.getElementById('final-score').innerText = `Moves left: ${game.movesLeft}`;
-
-            // Match detection (simplified)
-            const clickedColor = block.style.backgroundColor;
-            let matches = 1;
-
-            // Check adjacent blocks for the same color
-            if (index % 4 !== 0 && game.puzzleBlocks[index - 1].style.backgroundColor === clickedColor) matches++;
-            if ((index + 1) % 4 !== 0 && game.puzzleBlocks[index + 1].style.backgroundColor === clickedColor) matches++;
-            if (index >= 4 && game.puzzleBlocks[index - 4].style.backgroundColor === clickedColor) matches++;
-            if (index < 12 && game.puzzleBlocks[index + 4].style.backgroundColor === clickedColor) matches++;
-
-            if (matches >= 3) {
-                game.matchesFound++;
-                block.style.backgroundColor = 'lightgray'; // Mark as matched
-                if (game.matchesFound >= 5) {
-                    endGame();
+        function initGrid() {
+            for (let row = 0; row < gridRows; row++) {
+                grid[row] = [];
+                for (let col = 0; col < gridCols; col++) {
+                    grid[row][col] = Math.floor(Math.random() * 4) + 1;  // Random color from 1 to 4
                 }
             }
+        }
 
-            if (game.movesLeft <= 0 && game.matchesFound < 5) {
-                gameOver();
+        function drawGrid() {
+            for (let row = 0; row < gridRows; row++) {
+                for (let col = 0; col < gridCols; col++) {
+                    puzzleCtx.fillStyle = getColor(grid[row][col]);
+                    puzzleCtx.fillRect(col * blockSize, row * blockSize, blockSize, blockSize);
+                }
             }
         }
 
-        function moveFinley() {
-            // Finley moves around the screen
-            game.finley.x += game.finley.speed;
-            if (game.finley.x + game.finley.width > canvas.width || game.finley.x < 0) {
-                game.finley.speed = -game.finley.speed;
-            }
-
-            game.finley.y += game.finley.speed;
-            if (game.finley.y + game.finley.height > canvas.height || game.finley.y < 0) {
-                game.finley.speed = -game.finley.speed;
+        function getColor(value) {
+            switch (value) {
+                case 1: return 'red';
+                case 2: return 'green';
+                case 3: return 'blue';
+                case 4: return 'yellow';
+                default: return 'gray';
             }
         }
 
-        function moveShark() {
-            if (game.movesLeft > 0) return; // Shark doesn't move until movesLeft reaches 0
-
-            // Shark follows Finley
-            if (game.shark.x < game.finley.x) {
-                game.shark.x += game.shark.speed;
-            } else if (game.shark.x > game.finley.x) {
-                game.shark.x -= game.shark.speed;
+        function handleBlockClick(event) {
+            const rect = puzzleCanvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            const col = Math.floor(x / blockSize);
+            const row = Math.floor(y / blockSize);
+            
+            // Logic to check for matches and remove blocks
+            if (checkForMatches(row, col)) {
+                matches++;
+                if (matches >= 5) {
+                    alert('You win!');
+                    return;
+                }
+                if (--moveCounter <= 0) {
+                    gameOver();
+                }
             }
+            drawGrid();
+        }
 
-            if (game.shark.y < game.finley.y) {
-                game.shark.y += game.shark.speed;
-            } else if (game.shark.y > game.finley.y) {
-                game.shark.y -= game.shark.speed;
+        function checkForMatches(row, col) {
+            // Simplified match checking logic for 3 in a row/column
+            let match = false;
+            // Horizontal check
+            if (col <= gridCols - 3 && grid[row][col] === grid[row][col + 1] && grid[row][col] === grid[row][col + 2]) {
+                grid[row][col] = grid[row][col + 1] = grid[row][col + 2] = 0;
+                match = true;
+            }
+            // Vertical check
+            if (row <= gridRows - 3 && grid[row][col] === grid[row + 1][col] && grid[row][col] === grid[row + 2][col]) {
+                grid[row][col] = grid[row + 1][col] = grid[row + 2][col] = 0;
+                match = true;
+            }
+            return match;
+        }
+
+        function updateGrid() {
+            // Drop blocks down
+            for (let col = 0; col < gridCols; col++) {
+                for (let row = gridRows - 1; row >= 0; row--) {
+                    if (grid[row][col] === 0) {
+                        for (let aboveRow = row - 1; aboveRow >= 0; aboveRow--) {
+                            if (grid[aboveRow][col] !== 0) {
+                                grid[row][col] = grid[aboveRow][col];
+                                grid[aboveRow][col] = 0;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            // Refill top rows
+            for (let row = 0; row < gridRows; row++) {
+                for (let col = 0; col < gridCols; col++) {
+                    if (grid[row][col] === 0) {
+                        grid[row][col] = Math.floor(Math.random() * 4) + 1;
+                    }
+                }
             }
         }
 
-        function gameLoop() {
-            if (game.gameStarted) {
-                moveFinley();
-                moveShark();
-                checkCollisions();
-                renderGameObjects();
-                requestAnimationFrame(gameLoop);
-            }
-        }
-
-        function checkCollisions() {
-            if (game.movesLeft <= 0 && isColliding(game.finley, game.shark)) {
-                gameOver();
-            }
-        }
-
-        function isColliding(object1, object2) {
-            return (
-                object1.x < object2.x + object2.width &&
-                object1.x + object1.width > object2.x &&
-                object1.y < object2.y + object2.height &&
-                object1.y + object1.height > object2.y
-            );
-        }
-
-        function renderGameObjects() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
-            ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-            ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
-        }
-
-        function endGame() {
-            document.getElementById('game-over-screen').style.display = 'block';
-            document.getElementById('final-score').textContent = `Matches: ${game.matchesFound}`;
-            game.gameStarted = false; // Stop the game loop
-        }
+        puzzleCanvas.addEventListener('click', handleBlockClick);
 
         function gameOver() {
             document.getElementById('game-over-screen').style.display = 'block';
-            document.getElementById('final-score').textContent = 'Game Over';
-            game.gameStarted = false; // Stop the game loop
         }
 
         function restartGame() {
             document.getElementById('game-over-screen').style.display = 'none';
-            game.finley = { x: 50, y: 50, width: 20, height: 20, speed: 4 };
-            game.shark = { x: 300, y: 150, width: 30, height: 30, speed: 2 };
-            game.movesLeft = 7;
-            game.matchesFound = 0;
-            game.gameStarted = true;
-            initPuzzle();
+            finley.x = 50;
+            finley.y = 50;
+            shark.x = 350;
+            shark.y = 350;
+            moveCounter = 7;
+            matches = 0;
+            initGrid();
+            drawGrid();
             gameLoop();
         }
 
+        document.getElementById('restart-button').addEventListener('click', restartGame);
+
+        function updateGame() {
+            // Update Finley movement logic
+            if (finley.x < gameCanvas.width - finley.width && finley.y === 50) {
+                finley.x += finley.speed;
+            } else if (finley.x >= gameCanvas.width - finley.width && finley.y < gameCanvas.height - finley.height) {
+                finley.y += finley.speed;
+            } else if (finley.y >= gameCanvas.height - finley.height && finley.x > 50) {
+                finley.x -= finley.speed;
+            } else if (finley.x <= 50 && finley.y > 50) {
+                finley.y -= finley.speed;
+            }
+
+            // Shark movement
+            if (moveCounter <= 0) {
+                if (shark.x < finley.x) {
+                    shark.x += shark.speed;
+                } else if (shark.x > finley.x) {
+                    shark.x -= shark.speed;
+                }
+                if (shark.y < finley.y) {
+                    shark.y += shark.speed;
+                } else if (shark.y > finley.y) {
+                    shark.y -= shark.speed;
+                }
+
+                // Check collision between Finley and Shark
+                if (shark.x < finley.x + finley.width && shark.x + shark.width > finley.x &&
+                    shark.y < finley.y + finley.height && shark.y + shark.height > finley.y) {
+                    gameOver();
+                }
+            }
+        }
+
+        function renderGame() {
+            gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            // Draw Finley
+            gameCtx.fillStyle = 'green';
+            gameCtx.fillRect(finley.x, finley.y, finley.width, finley.height);
+
+            // Draw Shark
+            gameCtx.fillStyle = 'red';
+            gameCtx.fillRect(shark.x, shark.y, shark.width, shark.height);
+        }
+
+        function gameLoop() {
+            updateGame();
+            renderGame();
+            requestAnimationFrame(gameLoop);
+        }
+
         // Initialize the game
-        initPuzzle();
+        initGrid();
+        drawGrid();
         gameLoop();
     </script>
 </body>
