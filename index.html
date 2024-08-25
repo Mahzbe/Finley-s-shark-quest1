@@ -5,11 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finley's Shark Quest</title>
     <style>
-        /* Add your CSS styles here */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            color: #fff;
+        }
+        #game-canvas {
+            display: block;
+            background-color: #333;
+            margin: 0 auto;
+        }
+        #start-menu, #game-over-screen {
+            text-align: center;
+            color: #fff;
+        }
+        #puzzle-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        #puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 50px);
+            gap: 5px;
+        }
+        .puzzle-piece {
+            width: 50px;
+            height: 50px;
+            background-color: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
-    <canvas id="game-canvas" width="800" height="600"></canvas>
+    <canvas id="game-canvas" width="800" height="500"></canvas>
+    <div id="puzzle-container">
+        <div id="puzzle-grid"></div>
+    </div>
     <div id="start-menu">
         <h1>Finley's Shark Quest</h1>
         <button id="start-button" onclick="startGame()">Start Game</button>
@@ -21,11 +58,13 @@
     </div>
 
     <script>
-        let game, canvas, ctx;
+        let game, canvas, ctx, puzzleGridElement;
 
         function initGame() {
             canvas = document.getElementById('game-canvas');
             ctx = canvas.getContext('2d');
+            puzzleGridElement = document.getElementById('puzzle-grid');
+            
             game = {
                 shark: {
                     speed: 2,
@@ -43,8 +82,12 @@
                     targetCorner: 0 // Start with the first corner (top-left)
                 },
                 score: 0,
-                gameOver: false
+                gameOver: false,
+                puzzleSolved: false, // Flag to track if puzzle is solved
+                puzzleGrid: generatePuzzleGrid() // Initialize puzzle grid
             };
+
+            renderPuzzleGrid();
         }
 
         function startGame() {
@@ -99,9 +142,13 @@
             updateShark();
             updateFinley();
 
-            if (checkCollision(game.finley, game.shark)) {
+            // Check for collision only if the puzzle is not solved
+            if (!game.puzzleSolved && checkCollision(game.finley, game.shark)) {
                 gameOver();
             }
+
+            // Check if the puzzle is solved
+            checkPuzzleSolved();
         }
 
         function render() {
@@ -147,9 +194,35 @@
                    obj1.y + obj1.height > obj2.y;
         }
 
-        window.onload = () => {
-            initGame();
-        };
+        function generatePuzzleGrid() {
+            const grid = [];
+            for (let i = 0; i < 4; i++) {
+                const row = [];
+                for (let j = 0; j < 4; j++) {
+                    row.push(Math.floor(Math.random() * 4) + 1); // Random number 1-4
+                }
+                grid.push(row);
+            }
+            return grid;
+        }
+
+        function renderPuzzleGrid() {
+            puzzleGridElement.innerHTML = '';
+            game.puzzleGrid.forEach(row => {
+                row.forEach(value => {
+                    const piece = document.createElement('div');
+                    piece.className = 'puzzle-piece';
+                    piece.textContent = value;
+                    puzzleGridElement.appendChild(piece);
+                });
+            });
+        }
+
+        function checkPuzzleSolved() {
+            // Example logic for puzzle solving (can be customized)
+            // For simplicity, let's assume the puzzle is solved if all pieces are '1'
+            game.puzzleSolved = game.puzzleGrid.flat().every(value => value === 1);
+        }
     </script>
 </body>
 </html>
