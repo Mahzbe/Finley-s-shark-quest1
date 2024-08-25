@@ -21,6 +21,7 @@
             display: grid;
             grid-template-columns: repeat(4, 50px);
             grid-template-rows: repeat(4, 50px);
+            margin-top: 20px;
         }
         #shark, #finley {
             position: absolute;
@@ -32,6 +33,11 @@
         }
         #finley {
             background-color: green;
+        }
+        #timer {
+            text-align: center;
+            font-size: 20px;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -49,6 +55,7 @@
     <div id="puzzle-grid"></div>
     <div id="shark"></div>
     <div id="finley"></div>
+    <div id="timer">Moves Left: <span id="move-counter">7</span></div>
 
     <script>
         let game = {
@@ -91,14 +98,139 @@
             document.getElementById("start-menu").style.display = "none";
             document.getElementById("game-canvas").style.display = "block";
             generatePuzzle();
-            generatePuzzlePieces();
-            document.getElementById('puzzle-grid').style.display = 'grid';
             updatePuzzleGrid();
+            document.getElementById('puzzle-grid').style.display = 'grid';
+            document.getElementById('timer').style.display = 'block';
             gameLoop();
         }
 
-        function generatePuzzlePieces() {
-            // Generate puzzle pieces
+        function generatePuzzle() {
+            // Generate a 4x4 puzzle grid with random colors
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const color = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
+                    game.puzzleGrid[i][j] = color;
+                }
+            }
+        }
+
+        function updatePuzzleGrid() {
+            const gridElement = document.getElementById('puzzle-grid');
+            gridElement.innerHTML = ''; // Clear existing blocks
+
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const block = document.createElement('div');
+                    block.classList.add('block');
+                    block.style.backgroundColor = game.puzzleGrid[i][j];
+                    block.dataset.index = i * 4 + j;
+                    block.onclick = handleBlockClick;
+                    gridElement.appendChild(block);
+                }
+            }
+        }
+
+        function handleBlockClick(event) {
+            if (event.target.classList.contains('block')) {
+                const clickedBlock = event.target;
+                const index = clickedBlock.dataset.index;
+                const row = Math.floor(index / 4);
+                const col = index % 4;
+
+                // Swap block with the one above
+                if (row > 0) {
+                    swapBlocks(row, col, row - 1, col);
+                    checkMatches();
+                }
+
+                // Update grid
+                updatePuzzleGrid();
+                updateMoveCounter();
+            }
+        }
+
+        function swapBlocks(row1, col1, row2, col2) {
+            const temp = game.puzzleGrid[row1][col1];
+            game.puzzleGrid[row1][col1] = game.puzzleGrid[row2][col2];
+            game.puzzleGrid[row2][col2] = temp;
+        }
+
+        function checkMatches() {
+            let matches = 0;
+            const matchedIndices = new Set();
+
+            // Check for horizontal and vertical matches
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    const color = game.puzzleGrid[i][j];
+
+                    // Check horizontal
+                    if (j < 2 && color === game.puzzleGrid[i][j + 1] && color === game.puzzleGrid[i][j + 2]) {
+                        matchedIndices.add(i * 4 + j);
+                        matchedIndices.add(i * 4 + j + 1);
+                        matchedIndices.add(i * 4 + j + 2);
+                        matches++;
+                    }
+
+                    // Check vertical
+                    if (i < 2 && color === game.puzzleGrid[i + 1][j] && color === game.puzzleGrid[i + 2][j]) {
+                        matchedIndices.add(i * 4 + j);
+                        matchedIndices.add((i + 1) * 4 + j);
+                        matchedIndices.add((i + 2) * 4 + j);
+                        matches++;
+                    }
+                }
+            }
+
+            // Remove matched blocks
+            if (matches >= 5) {
+                game.puzzleSolved = true;
+                endGame();
+            } else {
+                // Remove matched blocks and shift others down
+                matchedIndices.forEach(index => {
+                    const row = Math.floor(index / 4);
+                    const col = index % 4;
+                    game.puzzleGrid[row][col] = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
+                });
+                updatePuzzleGrid();
+            }
+        }
+
+        function updateMoveCounter() {
+            game.movesLeft--;
+            document.getElementById('move-counter').innerText = game.movesLeft;
+
+            if (game.movesLeft <= 0 && !game.puzzleSolved) {
+                gameOver();
+            }
+        }
+
+        function endGame() {
+            document.getElementById("game-over-screen").style.display = "block";
+            document.getElementById("final-score").innerText = game.score;
+        }
+
+        function gameOver() {
+            document.getElementById("game-over-screen").style.display = "block";
+            document.getElementById("final-score").innerText = game.score;
+        }
+
+        function restartGame() {
+            game.score = 0;
+            game.level = 0;
+            game.puzzle.puzzlePieces = [];
+            game.shark.speed = 1;
+            game.shark.aggression = 1;
+            game.finley.x = 50;
+            game.finley.y = 50;
+            game.shark.x = 700;
+            game.shark.y = 100;
+            game.movesLeft = 7;
+            game.puzzleSolved = false;
+            document.getElementById("game-over-screen").style.display = "none";
+            document.getElementById('puzzle-grid').style.display = 'grid';
+            startGame();
         }
 
         function updateSharkPosition() {
@@ -112,7 +244,6 @@
                 game.shark.x += moveX;
                 game.shark.y += moveY;
 
-                // Ensure Shark stays within bounds
                 game.shark.x = Math.max(0, Math.min(750, game.shark.x));
                 game.shark.y = Math.max(0, Math.min(550, game.shark.y));
 
@@ -136,19 +267,27 @@
                 game.finley.x = Math.max(0, Math.min(750, game.finley.x));
                 game.finley.y = Math.max(0, Math.min(550, game.finley.y));
 
-                if (Math.random() < 0.05) {
-                    game.finley.x += (Math.random() - 0.5) * 20;
-                    game.finley.y += (Math.random() - 0.5) * 20;
-                }
-
                 document.getElementById('finley').style.left = game.finley.x + 'px';
                 document.getElementById('finley').style.top = game.finley.y + 'px';
             }
         }
 
+        function gameLoop() {
+            if (!game.puzzleSolved) {
+                updateSharkPosition();
+                updateFinleyPosition();
+                checkCollisions();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
         function checkCollisions() {
             if (checkCollision(game.finley, game.shark)) {
-                gameOver();
+                if (game.movesLeft <= 0) {
+                    endGame();
+                } else {
+                    gameOver();
+                }
             }
         }
 
@@ -160,74 +299,6 @@
                 return true;
             }
             return false;
-        }
-
-        function gameOver() {
-            document.getElementById("game-over-screen").style.display = "block";
-            document.getElementById("final-score").innerText = game.score;
-        }
-
-        function restartGame() {
-            game.score = 0;
-            game.level = 0;
-            game.puzzle.puzzlePieces = [];
-            game.shark.speed = 1;
-            game.shark.aggression = 1;
-            game.finley.x = 50;
-            game.finley.y = 50;
-            game.shark.x = 700;
-            game.shark.y = 100;
-            game.movesLeft = 7;
-            game.puzzleSolved = false;
-            document.getElementById("game-over-screen").style.display = "none";
-            startGame();
-        }
-
-        function handleBlockClick(event) {
-            if (event.target.classList.contains('block')) {
-                const clickedBlock = event.target;
-                const row = Math.floor(clickedBlock.dataset.index / 4);
-                const col = clickedBlock.dataset.index % 4;
-
-                // Logic to swap blocks and check for matches
-                swapBlocks(row, col);
-                checkMatches();
-                updatePuzzleGrid();
-            }
-        }
-
-        function swapBlocks(row, col) {
-            // Swap logic
-        }
-
-        function checkMatches() {
-            let matches = 0;
-            // Check for horizontal and vertical matches
-            // Set game.puzzleSolved = true if 5 matches are found
-        }
-
-        function updatePuzzleGrid() {
-            const gridElement = document.getElementById('puzzle-grid');
-            gridElement.innerHTML = ''; // Clear existing blocks
-
-            for (let i = 0; i < 4; i++) {
-                for (let j = 0; j < 4; j++) {
-                    const block = document.createElement('div');
-                    block.classList.add('block');
-                    block.style.backgroundColor = game.puzzleGrid[i][j];
-                    block.dataset.index = i * 4 + j;
-                    gridElement.appendChild(block);
-                }
-            }
-        }
-
-        function gameLoop() {
-            if (!game.puzzleSolved) {
-                updateSharkPosition();
-                updateFinleyPosition();
-                checkCollisions();
-                requestAnimationFrame(gameLoop);
-            }
         }
     </script>
 </body>
