@@ -37,6 +37,7 @@
             align-items: center;
             justify-content: center;
             font-size: 18px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -58,6 +59,7 @@
     <script>
         let game, canvas, ctx, puzzleGridElement;
         const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
+        let selectedPiece = null;
 
         function initGame() {
             canvas = document.getElementById('game-canvas');
@@ -142,7 +144,9 @@
                 gameOver();
             }
 
-            checkPuzzleSolved();
+            if (!game.puzzleSolved) {
+                checkPuzzleSolved();
+            }
         }
 
         function render() {
@@ -206,13 +210,42 @@
                     piece.style.backgroundColor = color;
                     piece.dataset.row = rowIndex;
                     piece.dataset.col = colIndex;
+                    piece.addEventListener('click', handleBlockClick);
                     puzzleGridElement.appendChild(piece);
                 });
             });
         }
 
+        function handleBlockClick(event) {
+            const row = parseInt(event.target.dataset.row);
+            const col = parseInt(event.target.dataset.col);
+
+            if (selectedPiece) {
+                const selectedRow = parseInt(selectedPiece.dataset.row);
+                const selectedCol = parseInt(selectedPiece.dataset.col);
+
+                // Swap blocks
+                if ((Math.abs(selectedRow - row) === 1 && selectedCol === col) || (Math.abs(selectedCol - col) === 1 && selectedRow === row)) {
+                    // Perform swap
+                    game.puzzleGrid[row][col] = selectedPiece.style.backgroundColor;
+                    game.puzzleGrid[selectedRow][selectedCol] = event.target.style.backgroundColor;
+
+                    // Check for matches
+                    checkPuzzleSolved();
+
+                    // Reset selection
+                    selectedPiece = null;
+                } else {
+                    // Set new selected piece
+                    selectedPiece = event.target;
+                }
+            } else {
+                // Set new selected piece
+                selectedPiece = event.target;
+            }
+        }
+
         function checkPuzzleSolved() {
-            // Check for matches
             let matched = false;
 
             // Horizontal matches
@@ -256,12 +289,12 @@
             }
 
             if (matched) {
-                // Update puzzle grid after removal
                 dropBlocks();
-                renderPuzzleGrid();
+                game.score += 10;
+                if (checkIfPuzzleSolved()) {
+                    game.puzzleSolved = true;
+                }
             }
-
-            game.puzzleSolved = !game.puzzleGrid.flat().includes(null);
         }
 
         function removeMatchedBlocks(startRow, startCol, direction) {
@@ -291,6 +324,11 @@
                     game.puzzleGrid[i][col] = colors[Math.floor(Math.random() * colors.length)];
                 }
             }
+            renderPuzzleGrid(); // Re-render puzzle grid
+        }
+
+        function checkIfPuzzleSolved() {
+            return game.puzzleGrid.every(row => row.every(color => color === null));
         }
     </script>
 </body>
