@@ -5,37 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finley's Shark Quest</title>
     <style>
-        body {
-            margin: 0;
-        }
-        #game-canvas {
-            border: 1px solid black;
-            display: none;
-        }
-        #start-menu, #game-over-screen {
-            text-align: center;
-            margin-top: 20px;
-        }
-        #game-over-screen {
-            display: none;
-        }
-        #puzzle-container {
-            position: relative;
-            width: 200px;
-            margin: 20px auto;
-        }
-        .block {
-            width: 50px;
-            height: 50px;
-            display: inline-block;
-        }
-        .block {
-            cursor: pointer;
-        }
-        #move-counter {
-            text-align: center;
-            margin: 10px 0;
-        }
+        body { margin: 0; }
+        #game-canvas { border: 1px solid black; display: block; }
+        #start-menu, #game-over-screen { text-align: center; margin-top: 20px; }
+        #game-over-screen { display: none; }
+        #puzzle-container { position: relative; width: 200px; margin: 20px auto; }
+        .block { width: 50px; height: 50px; display: inline-block; }
+        .block { cursor: pointer; }
+        #move-counter { text-align: center; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -56,6 +33,7 @@
         const ctx = canvas.getContext('2d');
         const puzzleContainer = document.getElementById('puzzle-container');
         const movesLeftElem = document.getElementById('moves-left');
+
         let game = {
             level: 0,
             puzzleGrid: Array.from({ length: 4 }, () => Array(4).fill(null)),
@@ -68,6 +46,7 @@
             lastMoveTime: 0,
             gameStarted: false
         };
+
         function startGame() {
             document.getElementById('start-menu').style.display = 'none';
             document.getElementById('game-canvas').style.display = 'block';
@@ -77,12 +56,13 @@
             game.matchesFound = 0;
             game.puzzleSolved = false;
             game.finleyDirection = { x: 1, y: 1 };
-            game.shark.speed = 1;
+            game.shark.speed = 1; // Reset shark speed
             game.lastMoveTime = performance.now();
             game.gameStarted = true;
             generatePuzzle();
             gameLoop();
         }
+
         function restartGame() {
             game = {
                 level: 0,
@@ -101,6 +81,7 @@
             generatePuzzle();
             gameLoop();
         }
+
         function generatePuzzle() {
             const colors = ['red', 'green', 'blue', 'yellow'];
             for (let i = 0; i < 4; i++) {
@@ -110,8 +91,10 @@
             }
             renderPuzzle();
         }
+
         function renderPuzzle() {
             puzzleContainer.innerHTML = '';
+            for (let i = 0; i < 4; i++) {
                 for (let j = 0; j < 4; j++) {
                     const block = document.createElement('div');
                     block.className = 'block';
@@ -124,10 +107,13 @@
                 }
             }
         }
+
         function handleBlockClick(row, col) {
             if (game.movesLeft <= 0 || game.puzzleSolved) return;
+
             game.movesLeft--;
             movesLeftElem.textContent = game.movesLeft;
+
             if (matchBlocks(row, col)) {
                 game.matchesFound++;
                 if (game.matchesFound >= 5) {
@@ -140,9 +126,11 @@
                 gameOver();
             }
         }
+
         function matchBlocks(row, col) {
             const color = game.puzzleGrid[row][col];
             let matched = 0;
+
             // Horizontal match
             for (let i = 0; i < 4; i++) {
                 if (game.puzzleGrid[row][i] === color) {
@@ -152,6 +140,7 @@
                 }
                 if (matched >= 3) return true;
             }
+
             // Vertical match
             matched = 0;
             for (let i = 0; i < 4; i++) {
@@ -162,44 +151,87 @@
                 }
                 if (matched >= 3) return true;
             }
+
             return false;
         }
-        function updateFinleyPosition() {
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            const radius = 100;
-            const angle = performance.now() * 0.001;
-            game.finley.x = centerX + radius * Math.cos(angle);
-            game.finley.y = centerY + radius * Math.sin(angle);
-        }
+
         function updateSharkPosition() {
+            if (!game.gameStarted || game.movesLeft > 0) return;
+
             const dx = game.finley.x - game.shark.x;
             const dy = game.finley.y - game.shark.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
+
             if (distance > 0) {
                 const moveX = (dx / distance) * game.shark.speed;
                 const moveY = (dy / distance) * game.shark.speed;
+
                 game.shark.x += moveX;
                 game.shark.y += moveY;
+
+                game.shark.x = Math.max(0, Math.min(canvas.width - game.shark.width, game.shark.x));
+                game.shark.y = Math.max(0, Math.min(canvas.height - game.shark.height, game.shark.y));
             }
         }
-        function checkCollision() {
-            if (distanceBetween(game.finley, game.shark) < game.finley.width / 2) {
-                gameOver();
+
+        function updateFinleyPosition() {
+            if (!game.gameStarted) return;
+
+            const now = performance.now();
+            if (now - game.lastMoveTime > 50) { // Update every 50ms
+                const moveAmount = 2;
+                game.finley.x += moveAmount * game.finleyDirection.x;
+                game.finley.y += moveAmount * game.finleyDirection.y;
+
+                // Boundary conditions for horizontal movement
+                if (game.finley.x + game.finley.width >= canvas.width) {
+                    game.finley.x = canvas.width - game.finley.width;
+                    game.finleyDirection.x = -1; // Move left
+                } else if (game.finley.x <= 0) {
+                    game.finley.x = 0;
+                    game.finleyDirection.x = 1; // Move right
+                }
+
+                // Boundary conditions for vertical movement
+                if (game.finley.y + game.finley.height >= canvas.height) {
+                    game.finley.y = canvas.height - game.finley.height;
+                    game.finleyDirection.y = -1; // Move up
+                } else if (game.finley.y <= 0) {
+                    game.finley.y = 0;
+                    game.finleyDirection.y = 1; // Move down
+                }
+
+                game.lastMoveTime = now;
             }
         }
-        function distanceBetween(obj1, obj2) {
-            return Math.sqrt((obj1.x - obj2.x) ** 2 + (obj1.y - obj2.y) ** 2);
-        }
+
         function gameLoop() {
             if (!game.puzzleSolved) {
                 updateFinleyPosition();
-                updateSharkPosition();
-                checkCollision();
+                if (game.movesLeft < 7) {
+                    updateSharkPosition();
+                    checkCollisions();
+                }
                 renderGameObjects();
                 requestAnimationFrame(gameLoop);
             }
         }
+
+        function checkCollisions() {
+            if (game.movesLeft <= 0 && isColliding(game.finley, game.shark)) {
+                gameOver();
+            }
+        }
+
+        function isColliding(object1, object2) {
+            return (
+                object1.x < object2.x + object2.width &&
+                object1.x + object1.width > object2.x &&
+                object1.y < object2.y + object2.height &&
+                object1.y + object1.height > object2.y
+            );
+        }
+
         function renderGameObjects() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
@@ -207,15 +239,17 @@
             ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
             ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
         }
+
         function endGame() {
             document.getElementById('game-over-screen').style.display = 'block';
             document.getElementById('final-score').textContent = `Matches: ${game.matchesFound}`;
-            game.gameStarted = false;
+            game.gameStarted = false; // Stop the game loop
         }
+
         function gameOver() {
             document.getElementById('game-over-screen').style.display = 'block';
             document.getElementById('final-score').textContent = 'Game Over';
-            game.gameStarted = false;
+            game.gameStarted = false; // Stop the game loop
         }
     </script>
 </body>
