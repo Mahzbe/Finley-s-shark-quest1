@@ -67,7 +67,6 @@
         let game, canvas, ctx, puzzleGridElement, timerElement;
         const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
         let selectedPiece = null;
-        let timerInterval;
 
         function initGame() {
             canvas = document.getElementById('game-canvas');
@@ -96,12 +95,11 @@
                 moves: 7, // Initialize move limit
                 matches: 0,
                 puzzleGrid: generatePuzzleGrid(),
-                puzzleSolved: false,
-                timer: 7 // Initialize timer
+                puzzleSolved: false
             };
 
             renderPuzzleGrid();
-            startTimer();
+            updateTimer();
         }
 
         function startGame() {
@@ -110,18 +108,8 @@
             gameLoop();
         }
 
-        function startTimer() {
-            timerInterval = setInterval(() => {
-                if (game.gameOver) return;
-
-                game.moves--;
-                timerElement.textContent = `Moves Left: ${game.moves}`;
-
-                if (game.moves <= 0) {
-                    clearInterval(timerInterval);
-                    gameOver();
-                }
-            }, 1000);
+        function updateTimer() {
+            timerElement.textContent = `Moves Left: ${game.moves}`;
         }
 
         function updateShark() {
@@ -212,7 +200,6 @@
 
         function restartGame() {
             document.getElementById("game-over-screen").style.display = "none";
-            clearInterval(timerInterval);
             initGame();
             gameLoop();
         }
@@ -271,6 +258,7 @@
                     // Check for matches
                     checkMatches();
                     game.moves--;
+                    updateTimer();
 
                     if (game.moves <= 0 && !game.puzzleSolved) {
                         gameOver();
