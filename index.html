@@ -21,7 +21,6 @@
     </div>
 
     <script>
-        // Initial Variables
         let game, canvas, ctx;
 
         function initGame() {
@@ -29,18 +28,10 @@
             ctx = canvas.getContext('2d');
             game = {
                 level: 0,
-                puzzle: {
-                    puzzlePieces: [],
-                    sharkBehavior: {
-                        speed: 1,
-                        aggression: 1
-                    }
-                },
                 shark: {
                     speed: 1,
-                    aggression: 1,
-                    x: 100,
-                    y: 100,
+                    x: 300,
+                    y: 300,
                     width: 50,
                     height: 50
                 },
@@ -51,13 +42,7 @@
                     height: 50
                 },
                 score: 0,
-                gameOver: false,
-                puzzleGrid: [
-                    [null, null, null, null],
-                    [null, null, null, null],
-                    [null, null, null, null],
-                    [null, null, null, null]
-                ]
+                gameOver: false
             };
             console.log("Game initialized.");
         }
@@ -65,20 +50,27 @@
         function startGame() {
             console.log("Start game button clicked!");
             document.getElementById("start-menu").style.display = "none";
-            initGame(); // Initialize the game state
+            initGame();
             gameLoop();
+        }
+
+        function updateShark() {
+            // Make the shark move toward Finley
+            const deltaX = game.finley.x - game.shark.x;
+            const deltaY = game.finley.y - game.shark.y;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // Shark speed determines how quickly it moves toward Finley
+            const speed = game.shark.speed * 2; // Adjust speed here if needed
+            game.shark.x += (deltaX / distance) * speed;
+            game.shark.y += (deltaY / distance) * speed;
         }
 
         function updateGame() {
             if (game.gameOver) return;
 
-            // Placeholder: Shark movement and collision handling
-            game.shark.x += game.shark.speed;
-            if (game.shark.x > canvas.width || game.shark.x < 0) {
-                game.shark.speed *= -1;
-            }
+            updateShark();
 
-            // Check collision (simple logic for now)
             if (checkCollision(game.finley, game.shark)) {
                 gameOver();
             }
@@ -146,7 +138,6 @@
             }
         });
 
-        // Initialize game when the page loads
         window.onload = () => {
             initGame();
         };
