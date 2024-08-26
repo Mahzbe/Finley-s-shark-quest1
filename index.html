@@ -101,7 +101,15 @@
             if (game.selectedBlock) {
                 swapBlocks(game.selectedBlock, { i, j });
                 game.selectedBlock = null;
-                checkMatches();
+                let matched = checkMatches();
+                if (matched) {
+                    game.matches++;
+                    document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
+                    if (game.matches >= 5) {
+                        winGame();
+                        return; // Exit to avoid decrementing moves after win
+                    }
+                }
             } else {
                 game.selectedBlock = { i, j };
             }
@@ -143,12 +151,8 @@
 
             if (matched) {
                 updatePuzzleGrid();
-                game.matches++;
-                document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
-                if (game.matches >= 5) {
-                    winGame();
-                }
             }
+            return matched;
         }
 
         function updatePuzzleGrid() {
@@ -218,8 +222,8 @@
             }
 
             // Shark follows Finley
-            let originalX = game.shark.x;
-            let originalY = game.shark.y;
+            const originalX = game.shark.x;
+            const originalY = game.shark.y;
 
             if (game.shark.x < game.finley.x) {
                 game.shark.x += game.shark.speed;
