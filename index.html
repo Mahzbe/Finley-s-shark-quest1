@@ -14,20 +14,22 @@
     </style>
 </head>
 <body>
-    <canvas id="game-canvas" width="800" height="600"></canvas>
+    <canvas id="game-canvas" width="800" height="300"></canvas>
     <div id="move-counter">Moves: 0/14</div>
     <div id="game-over-screen" style="display: none;">
         <h1>Game Over!</h1>
-        <p>Your score: <span id="final-score"></span></p>
         <button id="restart-button" onclick="restartGame()">Restart</button>
     </div>
+    <canvas id="puzzle-canvas" width="400" height="400"></canvas>
 
     <script>
         const canvas = document.getElementById('game-canvas');
+        const puzzleCanvas = document.getElementById('puzzle-canvas');
         const ctx = canvas.getContext('2d');
+        const puzzleCtx = puzzleCanvas.getContext('2d');
 
         let finley = { x: 50, y: 50, width: 50, height: 50, speed: 2, direction: 'right' };
-        let shark = { x: 700, y: 500, width: 50, height: 50, speed: 2 };
+        let shark = { x: 700, y: 250, width: 50, height: 50, speed: 2 };
 
         let puzzleGrid = [
             [null, null, null, null],
@@ -35,8 +37,9 @@
             [null, null, null, null],
             [null, null, null, null]
         ];
+
         let moveCounter = 0;
-        let maxMoves = 14;
+        const maxMoves = 14;
         let successfulMatches = 0;
         let gameOver = false;
 
@@ -72,23 +75,21 @@
             }
         }
 
-        function handleBlockClick(block, i, j) {
+        function handleBlockClick(i, j) {
             if (moveCounter < maxMoves && !gameOver) {
-                // Handle matching logic
-                // Existing code for handling clicks and matching goes here
-
+                // Handle matching logic (define your matching logic here)
                 moveCounter++;
                 updateMoveCounter();
 
-                // Check if a successful match was made
-                if (successfulMatchFound()) { // Make sure to define this function
+                // Check if a successful match was made (update as needed)
+                if (successfulMatchFound()) {
                     successfulMatches++;
                     if (successfulMatches >= 5) {
                         winGame();
                     }
                 }
 
-                // Check if the player has reached the maximum allowed moves
+                // End game if max moves reached
                 if (moveCounter >= maxMoves) {
                     if (successfulMatches < 5) {
                         endGame();
@@ -114,7 +115,6 @@
         }
 
         function stopGame() {
-            // Logic to stop the game, like stopping the game loop, displaying a win/game over screen, etc.
             document.getElementById("game-over-screen").style.display = "block";
         }
 
@@ -124,26 +124,24 @@
             gameOver = false;
             moveCounterElement.textContent = `Moves: 0/${maxMoves}`;
             finley = { x: 50, y: 50, width: 50, height: 50, speed: 2, direction: 'right' };
-            shark = { x: 700, y: 500, width: 50, height: 50, speed: 2 };
+            shark = { x: 700, y: 250, width: 50, height: 50, speed: 2 };
             document.getElementById("game-over-screen").style.display = "none";
-            // Add code to regenerate puzzle
+            generatePuzzle();
             gameLoop();
         }
 
         function successfulMatchFound() {
-            // Add logic to determine if a match was found
-            // Return true if a match was found, otherwise false
+            // Logic to check for successful match
             return false; // Placeholder
         }
 
         function renderPuzzleGrid() {
-            // Rendering the puzzle grid
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            puzzleCtx.clearRect(0, 0, puzzleCanvas.width, puzzleCanvas.height);
             for (let i = 0; i < 4; i++) {
                 for (let j = 0; j < 4; j++) {
                     if (puzzleGrid[i][j] !== null) {
-                        ctx.fillStyle = puzzleGrid[i][j];
-                        ctx.fillRect(j * 100, i * 100, 100, 100);
+                        puzzleCtx.fillStyle = puzzleGrid[i][j];
+                        puzzleCtx.fillRect(j * 100, i * 100, 100, 100);
                     }
                 }
             }
@@ -154,6 +152,7 @@
                 moveFinley();
                 moveShark();
                 renderPuzzleGrid();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = 'green';
                 ctx.fillRect(finley.x, finley.y, finley.width, finley.height);
                 ctx.fillStyle = 'red';
@@ -176,6 +175,15 @@
                 }
             }
         }
+
+        puzzleCanvas.addEventListener('click', function(e) {
+            const rect = puzzleCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const i = Math.floor(y / 100);
+            const j = Math.floor(x / 100);
+            handleBlockClick(i, j);
+        });
     </script>
 </body>
 </html>
