@@ -20,43 +20,33 @@
         #gameOverScreen, #congratulationsScreen {
             display: none;
             text-align: center;
-            font-size: 24px;
         }
         #congratulationsScreen {
             color: green;
-        }
-        #losingScreen {
-            color: red;
-        }
-        .sparkles {
-            position: relative;
-            display: inline-block;
-        }
-        .sparkles::before {
-            content: '✨';
+            font-size: 2em;
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            animation: sparkle 1s infinite;
-            font-size: 24px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
-        @keyframes sparkle {
-            0% { opacity: 0; }
-            50% { opacity: 1; }
-            100% { opacity: 0; }
+        #gameOverScreen {
+            color: red;
+            font-size: 2em;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
-    <div id="gameOverScreen" style="display:none;">
-        <h1 id="losingMessage">Game Over!</h1>
+    <div id="gameOverScreen">
+        <h1>Game Over!</h1>
         <button onclick="restartGame()">Restart</button>
     </div>
-    <div id="congratulationsScreen" style="display:none;">
-        <h1 class="sparkles">Congratulations!</h1>
+    <div id="congratulationsScreen">
+        <h1>Congratulations!</h1>
         <button onclick="restartGame()">Play Again</button>
     </div>
     <div id="movesCounter">Moves: 14</div>
@@ -70,7 +60,7 @@
         let game = {
             finley: { x: 50, y: 50, width: 30, height: 30, speed: 2 },
             shark: { x: 300, y: 300, width: 50, height: 50, speed: 1.5 },
-            moves: 14,  // Updated to 14
+            moves: 14,
             matches: 0,
             gameOver: false,
             puzzleGrid: [],
@@ -201,6 +191,20 @@
             gameLoop();
         }
 
+        function checkCollision() {
+            // Check if Finley and the Shark collide
+            if (
+                game.finley.x < game.shark.x + game.shark.width &&
+                game.finley.x + game.finley.width > game.shark.x &&
+                game.finley.y < game.shark.y + game.shark.height &&
+                game.finley.y + game.finley.height > game.shark.y
+            ) {
+                // Handle collision
+                return true;
+            }
+            return false;
+        }
+
         function updateGame() {
             // Finley's movement logic
             if (game.finley.x <= 50 && game.finley.y < 350) {
@@ -214,6 +218,9 @@
             }
 
             // Shark follows Finley
+            let originalX = game.shark.x;
+            let originalY = game.shark.y;
+
             if (game.shark.x < game.finley.x) {
                 game.shark.x += game.shark.speed;
             } else if (game.shark.x > game.finley.x) {
@@ -224,6 +231,12 @@
                 game.shark.y += game.shark.speed;
             } else if (game.shark.y > game.finley.y) {
                 game.shark.y -= game.shark.speed;
+            }
+
+            // Check for collision and revert Shark's position if necessary
+            if (checkCollision()) {
+                game.shark.x = originalX;
+                game.shark.y = originalY;
             }
         }
 
