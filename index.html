@@ -6,184 +6,207 @@
     <title>Finley's Shark Quest</title>
     <style>
         canvas {
-            border: 2px solid black;
+            border: 1px solid black;
         }
-        #move-counter {
-            margin-top: 10px;
+        #puzzleGrid {
+            display: grid;
+            grid-template-columns: repeat(4, 50px);
+            gap: 2px;
+        }
+        #puzzleGrid div {
+            width: 50px;
+            height: 50px;
         }
     </style>
 </head>
 <body>
-    <canvas id="game-canvas" width="800" height="300"></canvas>
-    <div id="move-counter">Moves: 0/14</div>
-    <div id="game-over-screen" style="display: none;">
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div id="gameOverScreen" style="display:none;">
         <h1>Game Over!</h1>
-        <button id="restart-button" onclick="restartGame()">Restart</button>
+        <button onclick="restartGame()">Restart</button>
     </div>
-    <canvas id="puzzle-canvas" width="400" height="400"></canvas>
-
+    <div id="movesCounter">Moves: 14</div> <!-- Updated to 14 -->
+    <div id="matchesCounter">Matches: 0</div>
+    <div id="puzzleGrid"></div>
+    
     <script>
-        const canvas = document.getElementById('game-canvas');
-        const puzzleCanvas = document.getElementById('puzzle-canvas');
+        const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const puzzleCtx = puzzleCanvas.getContext('2d');
+        
+        let game = {
+            finley: { x: 50, y: 50, width: 30, height: 30, speed: 2 },
+            shark: { x: 300, y: 300, width: 50, height: 50, speed: 1.5 },
+            moves: 14,  // Updated to 14
+            matches: 0,
+            gameOver: false,
+            puzzleGrid: [],
+            puzzleSize: 4,
+            selectedBlock: null,
+        };
 
-        let finley = { x: 50, y: 50, width: 50, height: 50, speed: 2, direction: 'right' };
-        let shark = { x: 700, y: 250, width: 50, height: 50, speed: 2 };
-
-        let puzzleGrid = [
-            [null, null, null, null],
-            [null, null, null, null],
-            [null, null, null, null],
-            [null, null, null, null]
-        ];
-
-        let moveCounter = 0;
-        const maxMoves = 14;
-        let successfulMatches = 0;
-        let gameOver = false;
-
-        const moveCounterElement = document.getElementById('move-counter');
-
-        function moveFinley() {
-            if (finley.direction === 'right') {
-                finley.x += finley.speed;
-                if (finley.x + finley.width >= canvas.width) finley.direction = 'down';
-            } else if (finley.direction === 'down') {
-                finley.y += finley.speed;
-                if (finley.y + finley.height >= canvas.height) finley.direction = 'left';
-            } else if (finley.direction === 'left') {
-                finley.x -= finley.speed;
-                if (finley.x <= 0) finley.direction = 'up';
-            } else if (finley.direction === 'up') {
-                finley.y -= finley.speed;
-                if (finley.y <= 0) finley.direction = 'right';
+        function initPuzzle() {
+            for (let i = 0; i < game.puzzleSize; i++) {
+                game.puzzleGrid[i] = [];
+                for (let j = 0; j < game.puzzleSize; j++) {
+                    game.puzzleGrid[i][j] = Math.floor(Math.random() * 4) + 1;
+                }
             }
+            renderPuzzle();
         }
 
-        function moveShark() {
-            if (shark.x < finley.x) {
-                shark.x += shark.speed;
-            } else if (shark.x > finley.x) {
-                shark.x -= shark.speed;
+        function renderPuzzle() {
+            let puzzleHTML = '';
+            for (let i = 0; i < game.puzzleSize; i++) {
+                for (let j = 0; j < game.puzzleSize; j++) {
+                    puzzleHTML += `<div style="background-color: ${getColor(game.puzzleGrid[i][j])};" onclick="handleBlockClick(${i}, ${j})"></div>`;
+                }
             }
+            document.getElementById('puzzleGrid').innerHTML = puzzleHTML;
+        }
 
-            if (shark.y < finley.y) {
-                shark.y += shark.speed;
-            } else if (shark.y > finley.y) {
-                shark.y -= shark.speed;
+        function getColor(value) {
+            switch (value) {
+                case 1: return 'red';
+                case 2: return 'blue';
+                case 3: return 'green';
+                case 4: return 'yellow';
             }
         }
 
         function handleBlockClick(i, j) {
-            if (moveCounter < maxMoves && !gameOver) {
-                // Handle matching logic (define your matching logic here)
-                moveCounter++;
-                updateMoveCounter();
+            if (game.selectedBlock) {
+                swapBlocks(game.selectedBlock, { i, j });
+                game.selectedBlock = null;
+                checkMatches();
+            } else {
+                game.selectedBlock = { i, j };
+            }
 
-                // Check if a successful match was made (update as needed)
-                if (successfulMatchFound()) {
-                    successfulMatches++;
-                    if (successfulMatches >= 5) {
-                        winGame();
+            game.moves--;
+            document.getElementById('movesCounter').innerText = `Moves: ${game.moves}`;
+            if (game.moves <= 0) {
+                gameOver();
+            }
+            renderPuzzle();
+        }
+
+        function swapBlocks(block1, block2) {
+            const temp = game.puzzleGrid[block1.i][block1.j];
+            game.puzzleGrid[block1.i][block1.j] = game.puzzleGrid[block2.i][block2.j];
+            game.puzzleGrid[block2.i][block2.j] = temp;
+        }
+
+        function checkMatches() {
+            let matched = false;
+            // Check rows
+            for (let i = 0; i < game.puzzleSize; i++) {
+                for (let j = 0; j < game.puzzleSize - 2; j++) {
+                    if (game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 1] && game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 2]) {
+                        matched = true;
+                        game.puzzleGrid[i][j] = game.puzzleGrid[i][j + 1] = game.puzzleGrid[i][j + 2] = 0; // Clear matched blocks
                     }
                 }
-
-                // End game if max moves reached
-                if (moveCounter >= maxMoves) {
-                    if (successfulMatches < 5) {
-                        endGame();
+            }
+            // Check columns
+            for (let j = 0; j < game.puzzleSize; j++) {
+                for (let i = 0; i < game.puzzleSize - 2; i++) {
+                    if (game.puzzleGrid[i][j] === game.puzzleGrid[i + 1][j] && game.puzzleGrid[i][j] === game.puzzleGrid[i + 2][j]) {
+                        matched = true;
+                        game.puzzleGrid[i][j] = game.puzzleGrid[i + 1][j] = game.puzzleGrid[i + 2][j] = 0; // Clear matched blocks
                     }
+                }
+            }
+
+            if (matched) {
+                updatePuzzleGrid();
+                game.matches++;
+                document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
+                if (game.matches >= 5) {
+                    alert('You won the game!');
+                    gameOver();
                 }
             }
         }
 
-        function updateMoveCounter() {
-            moveCounterElement.textContent = `Moves: ${moveCounter}/${maxMoves}`;
+        function updatePuzzleGrid() {
+            // Move blocks down and refill the grid
+            for (let j = 0; j < game.puzzleSize; j++) {
+                for (let i = game.puzzleSize - 1; i >= 0; i--) {
+                    if (game.puzzleGrid[i][j] === 0) {
+                        for (let k = i; k > 0; k--) {
+                            game.puzzleGrid[k][j] = game.puzzleGrid[k - 1][j];
+                        }
+                        game.puzzleGrid[0][j] = Math.floor(Math.random() * 4) + 1;
+                    }
+                }
+            }
+            renderPuzzle();
         }
 
-        function winGame() {
-            alert("Congratulations! You've matched 5 times and won the game!");
-            gameOver = true;
-            stopGame();
-        }
-
-        function endGame() {
-            alert("Game Over! You didn't match enough blocks.");
-            gameOver = true;
-            stopGame();
-        }
-
-        function stopGame() {
-            document.getElementById("game-over-screen").style.display = "block";
+        function gameOver() {
+            game.gameOver = true;
+            document.getElementById('gameOverScreen').style.display = 'block';
         }
 
         function restartGame() {
-            moveCounter = 0;
-            successfulMatches = 0;
-            gameOver = false;
-            moveCounterElement.textContent = `Moves: 0/${maxMoves}`;
-            finley = { x: 50, y: 50, width: 50, height: 50, speed: 2, direction: 'right' };
-            shark = { x: 700, y: 250, width: 50, height: 50, speed: 2 };
-            document.getElementById("game-over-screen").style.display = "none";
-            generatePuzzle();
+            game.moves = 14; // Reset to 14 moves
+            game.matches = 0;
+            game.gameOver = false;
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('movesCounter').innerText = `Moves: ${game.moves}`;
+            document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
+            initPuzzle();
             gameLoop();
         }
 
-        function successfulMatchFound() {
-            // Logic to check for successful match
-            return false; // Placeholder
-        }
+        function updateGame() {
+            // Finley's movement logic
+            if (game.finley.x <= 50 && game.finley.y < 350) {
+                game.finley.y += game.finley.speed; // Move down
+            } else if (game.finley.y >= 350 && game.finley.x < 350) {
+                game.finley.x += game.finley.speed; // Move right
+            } else if (game.finley.x >= 350 && game.finley.y > 50) {
+                game.finley.y -= game.finley.speed; // Move up
+            } else if (game.finley.y <= 50 && game.finley.x > 50) {
+                game.finley.x -= game.finley.speed; // Move left
+            }
 
-        function renderPuzzleGrid() {
-            puzzleCtx.clearRect(0, 0, puzzleCanvas.width, puzzleCanvas.height);
-            for (let i = 0; i < 4; i++) {
-                for (let j = 0; j < 4; j++) {
-                    if (puzzleGrid[i][j] !== null) {
-                        puzzleCtx.fillStyle = puzzleGrid[i][j];
-                        puzzleCtx.fillRect(j * 100, i * 100, 100, 100);
-                    }
-                }
+            // Shark follows Finley
+            if (game.shark.x < game.finley.x) {
+                game.shark.x += game.shark.speed;
+            } else if (game.shark.x > game.finley.x) {
+                game.shark.x -= game.shark.speed;
+            }
+
+            if (game.shark.y < game.finley.y) {
+                game.shark.y += game.shark.speed;
+            } else if (game.shark.y > game.finley.y) {
+                game.shark.y -= game.shark.speed;
             }
         }
 
+        function renderGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Finley
+            ctx.fillStyle = 'green';
+            ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
+
+            // Draw Shark
+            ctx.fillStyle = 'red';
+            ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
+        }
+
         function gameLoop() {
-            if (!gameOver) {
-                moveFinley();
-                moveShark();
-                renderPuzzleGrid();
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'green';
-                ctx.fillRect(finley.x, finley.y, finley.width, finley.height);
-                ctx.fillStyle = 'red';
-                ctx.fillRect(shark.x, shark.y, shark.width, shark.height);
+            if (!game.gameOver) {
+                updateGame();
+                renderGame();
                 requestAnimationFrame(gameLoop);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            generatePuzzle();
-            gameLoop();
-        });
-
-        function generatePuzzle() {
-            // Generate a 4x4 puzzle grid with random colors
-            const colors = ['red', 'blue', 'green', 'yellow'];
-            for (let i = 0; i < 4; i++) {
-                for (let j = 0; j < 4; j++) {
-                    puzzleGrid[i][j] = colors[Math.floor(Math.random() * colors.length)];
-                }
-            }
-        }
-
-        puzzleCanvas.addEventListener('click', function(e) {
-            const rect = puzzleCanvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const i = Math.floor(y / 100);
-            const j = Math.floor(x / 100);
-            handleBlockClick(i, j);
-        });
+        initPuzzle();
+        gameLoop();
     </script>
 </body>
 </html>
