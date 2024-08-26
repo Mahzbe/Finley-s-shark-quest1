@@ -5,227 +5,253 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finley's Shark Quest</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
         #game-canvas {
-            background-color: lightblue;
-            margin-bottom: 20px;
+            border: 1px solid black;
         }
-        #puzzle-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 50px);
-            grid-template-rows: repeat(4, 50px);
-            gap: 5px;
+        #puzzle-container {
+            display: flex;
+            flex-wrap: wrap;
+            width: 400px; /* Adjust based on grid size */
         }
         .puzzle-block {
-            width: 50px;
-            height: 50px;
-            background-color: gray;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            color: white;
+            width: 100px; /* Adjust based on grid size */
+            height: 100px; /* Adjust based on grid size */
+            display: inline-block;
+            box-sizing: border-box;
+            border: 1px solid black;
             cursor: pointer;
-        }
-        #move-counter, #match-counter {
-            margin: 10px 0;
         }
     </style>
 </head>
 <body>
-    <canvas id="game-canvas" width="500" height="300"></canvas>
-    <div id="move-counter">Moves Left: 7</div>
-    <div id="match-counter">Matches: 0</div>
-    <div id="puzzle-grid"></div>
+    <canvas id="game-canvas" width="800" height="600" style="display: none;"></canvas>
+    <div id="start-menu" style="display: block;">
+        <h1>Finley's Shark Quest</h1>
+        <button id="start-button" onclick="startGame()">Start Game</button>
+    </div>
     <div id="game-over-screen" style="display: none;">
         <h1>Game Over!</h1>
+        <p>Your score: <span id="final-score"></span></p>
         <button id="restart-button" onclick="restartGame()">Restart</button>
     </div>
-    <div id="game-won-screen" style="display: none;">
-        <h1>You Won!</h1>
-        <button id="restart-button" onclick="restartGame()">Restart</button>
-    </div>
+    <div id="puzzle-container"></div>
+    <div>Moves Remaining: <span id="moves-count">7</span></div>
     <script>
-        const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
-
-        const grid = document.getElementById('puzzle-grid');
-        const moveCounter = document.getElementById('move-counter');
-        const matchCounter = document.getElementById('match-counter');
-        let movesLeft = 7;
-        let matches = 0;
-        let puzzleGrid = [];
-        const colors = ['red', 'green', 'blue', 'yellow'];
-
-        const game = {
-            shark: { x: 450, y: 150, width: 50, height: 50, speed: 2 },
-            finley: { x: 50, y: 150, width: 50, height: 50, speed: 2 },
-            gameOver: false
+        let game = {
+            level: 0,
+            puzzle: {
+                puzzlePieces: [],
+                puzzleGrid: [],
+                matches: 0
+            },
+            shark: {
+                speed: 1,
+                aggression: 1,
+                x: 0,
+                y: 0
+            },
+            finley: {
+                x: 0,
+                y: 0,
+                width: 50,
+                height: 50
+            },
+            score: 0,
+            movesRemaining: 7
         };
 
-        function initializeGrid() {
-            grid.innerHTML = '';
-            puzzleGrid = [];
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const puzzleContainer = document.getElementById('puzzle-container');
+
+        function startGame() {
+            console.log("Start game button clicked!");
+            document.getElementById("start-menu").style.display = "none";
+            document.getElementById("game-canvas").style.display = "block";
+            document.getElementById("puzzle-container").style.display = "block";
+            document.getElementById("game-over-screen").style.display = "none";
+            generatePuzzle();
+            gameLoop();
+        }
+
+        function generatePuzzle() {
+            game.puzzle.puzzleGrid = [];
             for (let i = 0; i < 4; i++) {
-                const row = [];
+                game.puzzle.puzzleGrid[i] = [];
                 for (let j = 0; j < 4; j++) {
-                    const color = colors[Math.floor(Math.random() * colors.length)];
-                    const block = document.createElement('div');
-                    block.className = 'puzzle-block';
-                    block.style.backgroundColor = color;
-                    block.addEventListener('click', () => handleBlockClick(i, j));
-                    grid.appendChild(block);
-                    row.push(color);
+                    game.puzzle.puzzleGrid[i][j] = Math.floor(Math.random() * 4) + 1;
                 }
-                puzzleGrid.push(row);
+            }
+            renderPuzzle();
+        }
+
+        function renderPuzzle() {
+            puzzleContainer.innerHTML = '';
+            game.puzzle.puzzleGrid.forEach((row, i) => {
+                row.forEach((block, j) => {
+                    const div = document.createElement('div');
+                    div.classList.add('puzzle-block');
+                    div.style.backgroundColor = getColor(block);
+                    div.dataset.row = i;
+                    div.dataset.col = j;
+                    div.addEventListener('click', () => handleBlockClick(i, j));
+                    puzzleContainer.appendChild(div);
+                });
+            });
+        }
+
+        function getColor(value) {
+            switch (value) {
+                case 1: return 'red';
+                case 2: return 'green';
+                case 3: return 'blue';
+                case 4: return 'yellow';
             }
         }
 
         function handleBlockClick(row, col) {
-            if (game.gameOver) return;
+            if (game.movesRemaining <= 0) return;
 
-            movesLeft--;
-            moveCounter.textContent = `Moves Left: ${movesLeft}`;
-
-            if (movesLeft === 0) {
-                game.gameOver = true;
-                gameOver();
-                return;
-            }
-
-            checkMatches();
-
-            if (matches >= 5) {
-                gameWon();
-            }
+            game.movesRemaining--;
+            document.getElementById('moves-count').innerText = game.movesRemaining;
+            // Match logic
+            checkForMatches();
         }
 
-        function checkMatches() {
-            let foundMatch = false;
-            // Check horizontal matches
-            for (let i = 0; i < 4; i++) {
-                for (let j = 0; j < 2; j++) {
-                    if (puzzleGrid[i][j] === puzzleGrid[i][j + 1] && puzzleGrid[i][j] === puzzleGrid[i][j + 2]) {
-                        puzzleGrid[i][j] = puzzleGrid[i][j + 1] = puzzleGrid[i][j + 2] = null;
-                        foundMatch = true;
-                        matches++;
-                        matchCounter.textContent = `Matches: ${matches}`;
-                    }
-                }
-            }
-            // Check vertical matches
-            for (let j = 0; j < 4; j++) {
-                for (let i = 0; i < 2; i++) {
-                    if (puzzleGrid[i][j] === puzzleGrid[i + 1][j] && puzzleGrid[i][j] === puzzleGrid[i + 2][j]) {
-                        puzzleGrid[i][j] = puzzleGrid[i + 1][j] = puzzleGrid[i + 2][j] = null;
-                        foundMatch = true;
-                        matches++;
-                        matchCounter.textContent = `Matches: ${matches}`;
-                    }
-                }
-            }
+        function checkForMatches() {
+            let matchesFound = false;
 
-            if (foundMatch) {
-                fillEmptySpaces();
-            }
-        }
-
-        function fillEmptySpaces() {
-            for (let i = 3; i >= 0; i--) {
-                for (let j = 0; j < 4; j++) {
-                    if (puzzleGrid[i][j] === null) {
-                        puzzleGrid[i][j] = colors[Math.floor(Math.random() * colors.length)];
-                    }
-                }
-            }
-            renderGrid();
-        }
-
-        function renderGrid() {
-            const blocks = grid.children;
             for (let i = 0; i < 4; i++) {
                 for (let j = 0; j < 4; j++) {
-                    const block = blocks[i * 4 + j];
-                    block.style.backgroundColor = puzzleGrid[i][j];
+                    if (game.puzzle.puzzleGrid[i][j] !== null) {
+                        const color = game.puzzle.puzzleGrid[i][j];
+                        if (checkMatch(i, j, color)) {
+                            matchesFound = true;
+                            game.puzzle.puzzleGrid[i][j] = null;
+                            // Remove matches and shift blocks
+                            removeMatches();
+                        }
+                    }
+                }
+            }
+
+            if (matchesFound) {
+                game.puzzle.matches++;
+                if (game.puzzle.matches >= 5) {
+                    endGame('win');
+                }
+            } else if (game.movesRemaining <= 0) {
+                endGame('lose');
+            }
+            renderPuzzle();
+        }
+
+        function checkMatch(row, col, color) {
+            // Horizontal and vertical match checking
+            return (checkLine(row, col, color, 1, 0) >= 3 || // Horizontal
+                    checkLine(row, col, color, 0, 1) >= 3); // Vertical
+        }
+
+        function checkLine(row, col, color, rowStep, colStep) {
+            let count = 0;
+            while (row >= 0 && col >= 0 && row < 4 && col < 4 && game.puzzle.puzzleGrid[row][col] === color) {
+                count++;
+                row += rowStep;
+                col += colStep;
+            }
+            return count;
+        }
+
+        function removeMatches() {
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    if (game.puzzle.puzzleGrid[i][j] === null) {
+                        for (let k = i; k > 0; k--) {
+                            game.puzzle.puzzleGrid[k][j] = game.puzzle.puzzleGrid[k - 1][j];
+                        }
+                        game.puzzle.puzzleGrid[0][j] = Math.floor(Math.random() * 4) + 1;
+                    }
                 }
             }
         }
 
-        function update() {
-            if (game.gameOver) return;
-
-            // Move Finley
-            if (game.finley.x <= 50 && game.finley.y > 50) {
-                game.finley.y -= game.finley.speed;
-            } else if (game.finley.y <= 50 && game.finley.x < 450) {
-                game.finley.x += game.finley.speed;
-            } else if (game.finley.x >= 450 && game.finley.y < 250) {
-                game.finley.y += game.finley.speed;
-            } else if (game.finley.y >= 250 && game.finley.x > 50) {
-                game.finley.x -= game.finley.speed;
+        function endGame(result) {
+            document.getElementById("game-canvas").style.display = "none";
+            document.getElementById("puzzle-container").style.display = "none";
+            document.getElementById("game-over-screen").style.display = "block";
+            document.getElementById("final-score").innerText = game.score;
+            if (result === 'win') {
+                document.getElementById("final-score").innerText = "You Win!";
+            } else {
+                document.getElementById("final-score").innerText = "Game Over!";
             }
-
-            // Move Shark
-            const dx = game.finley.x - game.shark.x;
-            const dy = game.finley.y - game.shark.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            game.shark.x += (dx / distance) * game.shark.speed;
-            game.shark.y += (dy / distance) * game.shark.speed;
-
-            if (distance < 50 && movesLeft === 0) {
-                gameOver();
-            }
-        }
-
-        function render() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'green';
-            ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
-            ctx.fillStyle = 'red';
-            ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
-        }
-
-        function gameLoop() {
-            update();
-            render();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function gameOver() {
-            game.gameOver = true;
-            document.getElementById('game-over-screen').style.display = 'block';
-        }
-
-        function gameWon() {
-            game.gameOver = true;
-            document.getElementById('game-won-screen').style.display = 'block';
         }
 
         function restartGame() {
-            game.gameOver = false;
-            movesLeft = 7;
-            matches = 0;
-            game.finley.x = 50;
-            game.finley.y = 150;
-            game.shark.x = 450;
-            game.shark.y = 150;
-            moveCounter.textContent = `Moves Left: ${movesLeft}`;
-            matchCounter.textContent = `Matches: ${matches}`;
-            document.getElementById('game-over-screen').style.display = 'none';
-            document.getElementById('game-won-screen').style.display = 'none';
-            initializeGrid();
+            game.score = 0;
+            game.puzzle.matches = 0;
+            game.movesRemaining = 7;
+            generatePuzzle();
+            document.getElementById("game-over-screen").style.display = "none";
+            document.getElementById("game-canvas").style.display = "block";
+            document.getElementById("puzzle-container").style.display = "block";
             gameLoop();
         }
 
-        initializeGrid();
-        gameLoop();
+        function updateShark() {
+            // Shark movement
+            const distanceX = game.finley.x - game.shark.x;
+            const distanceY = game.finley.y - game.shark.y;
+            const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+            const speed = 1;
+
+            game.shark.x += (distanceX / distance) * speed;
+            game.shark.y += (distanceY / distance) * speed;
+        }
+
+        function updateFinley() {
+            // Finley movement logic
+            const direction = Math.random() * 2 * Math.PI;
+            const speed = 2;
+
+            game.finley.x += Math.cos(direction) * speed;
+            game.finley.y += Math.sin(direction) * speed;
+
+            // Keep Finley within canvas boundaries
+            if (game.finley.x < 0) game.finley.x = 0;
+            if (game.finley.y < 0) game.finley.y = 0;
+            if (game.finley.x > canvas.width - game.finley.width) game.finley.x = canvas.width - game.finley.width;
+            if (game.finley.y > canvas.height - game.finley.height) game.finley.y = canvas.height - game.finley.height;
+        }
+
+        function checkCollisions() {
+            if (checkCollision(game.finley, game.shark)) {
+                endGame('lose');
+            }
+        }
+
+        function gameLoop() {
+            updateShark();
+            updateFinley();
+            checkCollisions();
+            renderGame();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function renderGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+            ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+            ctx.fillRect(game.shark.x, game.shark.y, 50, 50);
+        }
+
+        function checkCollision(rect1, rect2) {
+            return !(rect1.x + rect1.width < rect2.x ||
+                     rect1.x > rect2.x + rect2.width ||
+                     rect1.y + rect1.height < rect2.y ||
+                     rect1.y > rect2.y + rect2.height);
+        }
     </script>
 </body>
 </html>
