@@ -17,15 +17,49 @@
             width: 50px;
             height: 50px;
         }
+        #gameOverScreen, #congratulationsScreen {
+            display: none;
+            text-align: center;
+            font-size: 24px;
+        }
+        #congratulationsScreen {
+            color: green;
+        }
+        #losingScreen {
+            color: red;
+        }
+        .sparkles {
+            position: relative;
+            display: inline-block;
+        }
+        .sparkles::before {
+            content: '✨';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            animation: sparkle 1s infinite;
+            font-size: 24px;
+        }
+        @keyframes sparkle {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
     <div id="gameOverScreen" style="display:none;">
-        <h1>Game Over!</h1>
+        <h1 id="losingMessage">Game Over!</h1>
         <button onclick="restartGame()">Restart</button>
     </div>
-    <div id="movesCounter">Moves: 14</div> <!-- Updated to 14 -->
+    <div id="congratulationsScreen" style="display:none;">
+        <h1 class="sparkles">Congratulations!</h1>
+        <button onclick="restartGame()">Play Again</button>
+    </div>
+    <div id="movesCounter">Moves: 14</div>
     <div id="matchesCounter">Matches: 0</div>
     <div id="puzzleGrid"></div>
     
@@ -122,8 +156,7 @@
                 game.matches++;
                 document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
                 if (game.matches >= 5) {
-                    alert('You won the game!');
-                    gameOver();
+                    winGame();
                 }
             }
         }
@@ -143,9 +176,16 @@
             renderPuzzle();
         }
 
+        function winGame() {
+            game.gameOver = true;
+            document.getElementById('congratulationsScreen').style.display = 'block';
+            document.getElementById('gameCanvas').style.display = 'none'; // Hide the game canvas
+        }
+
         function gameOver() {
             game.gameOver = true;
             document.getElementById('gameOverScreen').style.display = 'block';
+            document.getElementById('gameCanvas').style.display = 'none'; // Hide the game canvas
         }
 
         function restartGame() {
@@ -153,6 +193,8 @@
             game.matches = 0;
             game.gameOver = false;
             document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('congratulationsScreen').style.display = 'none';
+            document.getElementById('gameCanvas').style.display = 'block'; // Show the game canvas
             document.getElementById('movesCounter').innerText = `Moves: ${game.moves}`;
             document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
             initPuzzle();
