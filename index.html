@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finley's Shark Quest</title>
     <style>
+        body {
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
         canvas {
             border: 1px solid black;
         }
@@ -12,14 +19,11 @@
             display: grid;
             grid-template-columns: repeat(4, 50px);
             gap: 2px;
+            margin: 20px;
         }
         #puzzleGrid div {
             width: 50px;
             height: 50px;
-        }
-        #gameOverScreen, #congratulationsScreen {
-            display: none;
-            text-align: center;
         }
         #congratulationsScreen {
             color: green;
@@ -28,14 +32,14 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            font-family: 'Comic Sans MS', cursive;
         }
-        #gameOverScreen {
-            color: red;
-            font-size: 2em;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        #gameOverScreen, #congratulationsScreen {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid black;
+            border-radius: 10px;
+            background-color: #fff;
         }
     </style>
 </head>
@@ -47,19 +51,30 @@
     </div>
     <div id="congratulationsScreen">
         <h1>Congratulations!</h1>
+        <p>You won! Finley outsmarted the Shark!</p>
         <button onclick="restartGame()">Play Again</button>
     </div>
     <div id="movesCounter">Moves: 14</div>
     <div id="matchesCounter">Matches: 0</div>
     <div id="puzzleGrid"></div>
-    
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
         let game = {
-            finley: { x: 50, y: 50, width: 30, height: 30, speed: 2 },
-            shark: { x: 300, y: 300, width: 50, height: 50, speed: 1 }, // Slowed down Shark
+            finley: {
+                x: 50,
+                y: 50,
+                width: 30,
+                height: 30,
+                speed: 2
+            },
+            shark: {
+                x: 300,
+                y: 300,
+                width: 50,
+                height: 50,
+                speed: 1
+            },
             moves: 14,
             matches: 0,
             gameOver: false,
@@ -67,7 +82,6 @@
             puzzleSize: 4,
             selectedBlock: null,
         };
-
         function initPuzzle() {
             for (let i = 0; i < game.puzzleSize; i++) {
                 game.puzzleGrid[i] = [];
@@ -77,7 +91,6 @@
             }
             renderPuzzle();
         }
-
         function renderPuzzle() {
             let puzzleHTML = '';
             for (let i = 0; i < game.puzzleSize; i++) {
@@ -87,16 +100,18 @@
             }
             document.getElementById('puzzleGrid').innerHTML = puzzleHTML;
         }
-
         function getColor(value) {
             switch (value) {
-                case 1: return 'red';
-                case 2: return 'blue';
-                case 3: return 'green';
-                case 4: return 'yellow';
+                case 1:
+                    return 'red';
+                case 2:
+                    return 'blue';
+                case 3:
+                    return 'green';
+                case 4:
+                    return 'yellow';
             }
         }
-
         function handleBlockClick(i, j) {
             if (game.selectedBlock) {
                 swapBlocks(game.selectedBlock, { i, j });
@@ -113,7 +128,6 @@
             } else {
                 game.selectedBlock = { i, j };
             }
-
             game.moves--;
             document.getElementById('movesCounter').innerText = `Moves: ${game.moves}`;
             if (game.moves <= 0) {
@@ -121,7 +135,6 @@
             }
             renderPuzzle();
         }
-
         function swapBlocks(block1, block2) {
             const temp = game.puzzleGrid[block1.i][block1.j];
             game.puzzleGrid[block1.i][block1.j] = game.puzzleGrid[block2.i][block2.j];
@@ -148,7 +161,6 @@
                     }
                 }
             }
-
             if (matched) {
                 updatePuzzleGrid();
             }
@@ -197,12 +209,7 @@
 
         function checkCollision() {
             // Check if Finley and the Shark collide
-            if (
-                game.finley.x < game.shark.x + game.shark.width &&
-                game.finley.x + game.finley.width > game.shark.x &&
-                game.finley.y < game.shark.y + game.shark.height &&
-                game.finley.y + game.finley.height > game.shark.y
-            ) {
+            if (game.finley.x < game.shark.x + game.shark.width && game.finley.x + game.finley.width > game.shark.x && game.finley.y < game.shark.y + game.shark.height && game.finley.y + game.finley.height > game.shark.y) {
                 // Handle collision
                 return true;
             }
@@ -220,23 +227,19 @@
             } else if (game.finley.y <= 50 && game.finley.x > 50) {
                 game.finley.x -= game.finley.speed; // Move left
             }
-
             // Shark follows Finley
             const originalX = game.shark.x;
             const originalY = game.shark.y;
-
             if (game.shark.x < game.finley.x) {
                 game.shark.x += game.shark.speed;
             } else if (game.shark.x > game.finley.x) {
                 game.shark.x -= game.shark.speed;
             }
-
             if (game.shark.y < game.finley.y) {
                 game.shark.y += game.shark.speed;
             } else if (game.shark.y > game.finley.y) {
                 game.shark.y -= game.shark.speed;
             }
-
             // Check for collision and revert Shark's position if necessary
             if (checkCollision()) {
                 game.shark.x = originalX;
@@ -246,11 +249,9 @@
 
         function renderGame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             // Draw Finley
             ctx.fillStyle = 'green';
             ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
-
             // Draw Shark
             ctx.fillStyle = 'red';
             ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
