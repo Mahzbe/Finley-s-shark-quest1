@@ -6,16 +6,14 @@
     <title>Finley's Shark Quest</title>
     <style>
         body {
-            background-image: url('background.png');
-            background-size: cover; /* Ensure the background covers the entire viewport */
-            background-position: center; /* Center the background image */
-            background-repeat: no-repeat; /* Prevent the background from repeating */
+            background-color: #f0f0f0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
             position: relative;
+            font-family: Arial, sans-serif;
         }
         canvas {
             border: 1px solid black;
@@ -40,6 +38,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            display: none;
         }
         #menuScreen {
             display: flex;
@@ -66,7 +65,6 @@
         #matchesCounter {
             left: 150px;
         }
-        /* Hide the audio controls if you don't want them displayed */
         #themeMusic {
             display: none;
         }
@@ -255,89 +253,74 @@
             }
         }
 
-        function winGame() {
-            game.gameOver = true;
-            document.getElementById('congratulationsScreen').style.display = 'block';
-            document.getElementById('gameCanvas').style.display = 'none'; // Hide the game canvas
+        function gameLoop() {
+            if (game.gameOver) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updateFinley();
+            updateShark();
+            checkCollisions();
+            drawFinley();
+            drawShark();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateFinley() {
+            game.finley.x += game.finley.speed;
+            if (game.finley.x + game.finley.width > canvas.width || game.finley.x < 0) {
+                game.finley.speed = -game.finley.speed;
+            }
+        }
+
+        function updateShark() {
+            game.shark.x += game.shark.speed * Math.sign(game.finley.x - game.shark.x);
+            game.shark.y += game.shark.speed * Math.sign(game.finley.y - game.shark.y);
+        }
+
+        function checkCollisions() {
+            if (game.finley.x < game.shark.x + game.shark.width &&
+                game.finley.x + game.finley.width > game.shark.x &&
+                game.finley.y < game.shark.y + game.shark.height &&
+                game.finley.y + game.finley.height > game.shark.y) {
+                gameOver();
+            }
+        }
+
+        function drawFinley() {
+            ctx.fillStyle = 'green';
+            ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
+        }
+
+        function drawShark() {
+            ctx.fillStyle = 'red';
+            ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
         }
 
         function gameOver() {
             game.gameOver = true;
             document.getElementById('gameOverScreen').style.display = 'block';
-            document.getElementById('gameCanvas').style.display = 'none'; // Hide the game canvas
+            document.getElementById('pauseGameBtn').style.display = 'none';
+        }
+
+        function winGame() {
+            game.gameOver = true;
+            document.getElementById('congratulationsScreen').style.display = 'block';
+            document.getElementById('pauseGameBtn').style.display = 'none';
         }
 
         function restartGame() {
-            game.moves = 14; // Reset to 14 moves
-            game.matches = 0;
-            game.gameOver = false;
+            game = {
+                ...game,
+                finley: { ...game.finley, x: 50, y: 50, speed: 2 },
+                shark: { ...game.shark, x: 300, y: 300, speed: 1 },
+                moves: 14,
+                matches: 0,
+                gameOver: false
+            };
+            initPuzzle();
             document.getElementById('gameOverScreen').style.display = 'none';
             document.getElementById('congratulationsScreen').style.display = 'none';
-            document.getElementById('gameCanvas').style.display = 'block'; // Show the game canvas
-            document.getElementById('movesCounter').innerText = `Moves: ${game.moves}`;
-            document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
-            initPuzzle();
+            document.getElementById('pauseGameBtn').style.display = 'block';
             gameLoop();
-        }
-
-        function checkCollision() {
-            // Check if Finley and the Shark collide
-            if (game.finley.x < game.shark.x + game.shark.width && game.finley.x + game.finley.width > game.shark.x && game.finley.y < game.shark.y + game.shark.height && game.finley.y + game.finley.height > game.shark.y) {
-                // Handle collision
-                return true;
-            }
-            return false;
-        }
-
-        function updateGame() {
-            // Finley's movement logic
-            if (game.finley.x <= 50 && game.finley.y < 350) {
-                game.finley.y += game.finley.speed; // Move down
-            } else if (game.finley.y >= 350 && game.finley.x < 350) {
-                game.finley.x += game.finley.speed; // Move right
-            } else if (game.finley.x >= 350 && game.finley.y > 50) {
-                game.finley.y -= game.finley.speed; // Move up
-            } else if (game.finley.y <= 50 && game.finley.x > 50) {
-                game.finley.x -= game.finley.speed; // Move left
-            }
-            // Shark follows Finley
-            const originalX = game.shark.x;
-            const originalY = game.shark.y;
-            if (game.shark.x < game.finley.x) {
-                game.shark.x += game.shark.speed;
-            } else if (game.shark.x > game.finley.x) {
-                game.shark.x -= game.shark.speed;
-            }
-            if (game.shark.y < game.finley.y) {
-                game.shark.y += game.shark.speed;
-            } else if (game.shark.y > game.finley.y) {
-                game.shark.y -= game.shark.speed;
-            }
-            // Check for collision and revert Shark's position if necessary
-            if (checkCollision()) {
-                game.shark.x = originalX;
-                game.shark.y = originalY;
-            }
-        }
-
-        function renderGame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Draw Finley
-            ctx.fillStyle = 'green';
-            ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
-            // Draw Shark
-            ctx.fillStyle = 'red';
-            ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
-        }
-
-        let paused = false;
-
-        function gameLoop() {
-            if (!game.gameOver && !paused) {
-                updateGame();
-                renderGame();
-                requestAnimationFrame(gameLoop);
-            }
         }
     </script>
 </body>
