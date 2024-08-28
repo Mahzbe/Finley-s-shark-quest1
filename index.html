@@ -7,6 +7,8 @@
     <style>
         canvas {
             border: 1px solid black;
+            background-image: url('background.png');
+            background-size: cover;
         }
         #puzzleGrid {
             display: grid;
@@ -184,14 +186,12 @@
             game.gameOver = true;
             document.getElementById('congratulationsScreen').style.display = 'block';
             document.getElementById('gameCanvas').style.display = 'none'; // Hide the game canvas
-            backgroundMusic.pause(); // Stop music on win
         }
 
         function gameOver() {
             game.gameOver = true;
             document.getElementById('gameOverScreen').style.display = 'block';
             document.getElementById('gameCanvas').style.display = 'none'; // Hide the game canvas
-            backgroundMusic.pause(); // Stop music on game over
         }
 
         function restartGame() {
@@ -223,66 +223,63 @@
 
         function updateGame() {
             // Finley's movement logic
-            if (game.finley.x <= 50 && game.finley.y < 550) {
-                game.finley.y += game.finley.speed;
-            } else if (game.finley.y >= 550 && game.finley.x < 550) {
-                game.finley.x += game.finley.speed;
+            if (game.finley.x <= 50 && game.finley.y < 350) {
+                game.finley.y += game.finley.speed; // Move down
+            } else if (game.finley.y >= 350 && game.finley.x < 550) {
+                game.finley.x += game.finley.speed; // Move right
             } else if (game.finley.x >= 550 && game.finley.y > 50) {
-                game.finley.y -= game.finley.speed;
+                game.finley.y -= game.finley.speed; // Move up
             } else if (game.finley.y <= 50 && game.finley.x > 50) {
-                game.finley.x -= game.finley.speed;
+                game.finley.x -= game.finley.speed; // Move left
             }
 
-            // Shark's movement logic
+            // Shark's movement logic to avoid Finley
             if (game.shark.x < game.finley.x) {
-                game.shark.x += game.shark.speed;
+                game.shark.x += game.shark.speed; // Move right
             } else if (game.shark.x > game.finley.x) {
-                game.shark.x -= game.shark.speed;
+                game.shark.x -= game.shark.speed; // Move left
             }
-
             if (game.shark.y < game.finley.y) {
-                game.shark.y += game.shark.speed;
+                game.shark.y += game.shark.speed; // Move down
             } else if (game.shark.y > game.finley.y) {
-                game.shark.y -= game.shark.speed;
+                game.shark.y -= game.shark.speed; // Move up
             }
 
+            // Check for collisions
             if (checkCollision()) {
                 gameOver();
             }
+
+            drawGame();
         }
 
-        function draw() {
+        function drawGame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'green';
             ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
-            ctx.fillStyle = 'gray';
+            ctx.fillStyle = 'blue';
             ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
         }
 
         function gameLoop() {
             if (!game.gameOver) {
                 updateGame();
-                draw();
                 requestAnimationFrame(gameLoop);
             }
         }
 
-        // Initialize puzzle and start game loop
-        initPuzzle();
-        gameLoop();
-
-        // Music controls
-        let isPlaying = false;
         playMusicButton.addEventListener('click', () => {
-            if (isPlaying) {
-                backgroundMusic.pause();
-                playMusicButton.textContent = 'Play Music';
-            } else {
+            if (backgroundMusic.paused) {
                 backgroundMusic.play();
                 playMusicButton.textContent = 'Pause Music';
+            } else {
+                backgroundMusic.pause();
+                playMusicButton.textContent = 'Play Music';
             }
-            isPlaying = !isPlaying;
         });
+
+        initPuzzle();
+        gameLoop();
     </script>
 </body>
 </html>
