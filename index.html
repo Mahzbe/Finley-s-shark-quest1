@@ -5,154 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finley's Shark Quest</title>
     <style>
-        body {
-            background-image: url('background.png');
-            background-size: cover; /* Ensure the background covers the entire viewport */
-            background-position: center; /* Center the background image */
-            background-repeat: no-repeat; /* Prevent the background from repeating */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            position: relative;
-        }
         canvas {
             border: 1px solid black;
         }
         #puzzleGrid {
             display: grid;
-            grid-template-columns: repeat(4, 50px);
+            grid-template-columns: repeat(4, 60px);
             gap: 2px;
-            margin: 20px;
         }
         #puzzleGrid div {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
         }
-        #congratulationsScreen, #gameOverScreen, #menuScreen {
+        #gameOverScreen, #congratulationsScreen {
+            display: none;
             text-align: center;
-            padding: 20px;
-            border: 1px solid black;
-            border-radius: 10px;
-            background-color: #fff;
+        }
+        #congratulationsScreen {
+            color: green;
+            font-size: 2em;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
         }
-        #menuScreen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        #menuScreen button {
-            margin: 10px;
-        }
-        #gameCanvas {
+        #gameOverScreen {
+            color: red;
+            font-size: 2em;
             position: absolute;
-            top: 0;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate(-50%, -50%);
         }
         #movesCounter, #matchesCounter {
-            position: absolute;
-            top: 420px;
-            font-size: 20px;
-        }
-        #movesCounter {
-            left: 20px;
-        }
-        #matchesCounter {
-            left: 150px;
-        }
-        /* Hide the audio controls if you don't want them displayed */
-        #themeMusic {
-            display: none;
+            font-size: 1.5em;
+            margin: 10px;
         }
     </style>
 </head>
 <body>
-    <audio id="themeMusic" src="fin.mp3" preload="auto"></audio>
-    <button id="toggleMusicBtn">Play Music</button>
     <canvas id="gameCanvas" width="600" height="600"></canvas>
-    <div id="menuScreen">
-        <h1>Welcome to Finley's Shark Quest</h1>
-        <button id="startGameBtn">Start Game</button>
-        <button id="quitGameBtn">Quit Game</button>
-    </div>
     <div id="gameOverScreen">
         <h1>Game Over!</h1>
         <button onclick="restartGame()">Restart</button>
     </div>
     <div id="congratulationsScreen">
         <h1>Congratulations!</h1>
-        <p>You won! Finley outsmarted the Shark!</p>
         <button onclick="restartGame()">Play Again</button>
     </div>
     <div id="movesCounter">Moves: 14</div>
     <div id="matchesCounter">Matches: 0</div>
     <div id="puzzleGrid"></div>
-    <button id="pauseGameBtn" style="display: none;">Pause Game</button>
-
+    
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-
+        
         let game = {
-            finley: {
-                x: 50,
-                y: 50,
-                width: 30,
-                height: 30,
-                speed: 2,
-                direction: 0 // 0: left, 1: down, 2: right, 3: up
-            },
-            shark: {
-                x: 200,
-                y: 200,
-                width: 50,
-                height: 50,
-                speed: 1
-            },
+            finley: { x: 100, y: 100, width: 40, height: 40, speed: 2 },
+            shark: { x: 400, y: 400, width: 60, height: 60, speed: 1 },
             moves: 14,
             matches: 0,
             gameOver: false,
             puzzleGrid: [],
             puzzleSize: 4,
             selectedBlock: null,
-            paused: false
         };
-
-        document.getElementById('startGameBtn').addEventListener('click', () => {
-            initPuzzle();
-            gameLoop();
-            document.getElementById('menuScreen').style.display = 'none';
-            document.getElementById('pauseGameBtn').style.display = 'block';
-            document.getElementById('gameCanvas').style.display = 'block';
-        });
-
-        document.getElementById('quitGameBtn').addEventListener('click', () => {
-            window.close(); // This may not work in all browsers due to security restrictions
-        });
-
-        document.getElementById('pauseGameBtn').addEventListener('click', () => {
-            game.paused = !game.paused;
-            document.getElementById('pauseGameBtn').innerText = game.paused ? 'Resume Game' : 'Pause Game';
-        });
-
-        const themeMusic = document.getElementById('themeMusic');
-        const toggleMusicBtn = document.getElementById('toggleMusicBtn');
-
-        toggleMusicBtn.addEventListener('click', () => {
-            if (themeMusic.paused) {
-                themeMusic.play();
-                toggleMusicBtn.innerText = 'Pause Music';
-            } else {
-                themeMusic.pause();
-                toggleMusicBtn.innerText = 'Play Music';
-            }
-        });
 
         function initPuzzle() {
             for (let i = 0; i < game.puzzleSize; i++) {
@@ -176,14 +94,10 @@
 
         function getColor(value) {
             switch (value) {
-                case 1:
-                    return 'red';
-                case 2:
-                    return 'blue';
-                case 3:
-                    return 'green';
-                case 4:
-                    return 'yellow';
+                case 1: return 'red';
+                case 2: return 'blue';
+                case 3: return 'green';
+                case 4: return 'yellow';
             }
         }
 
@@ -197,12 +111,13 @@
                     document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
                     if (game.matches >= 5) {
                         winGame();
-                        return; // Exit to avoid decrementing moves after win
+                        return;
                     }
                 }
             } else {
                 game.selectedBlock = { i, j };
             }
+
             game.moves--;
             document.getElementById('movesCounter').innerText = `Moves: ${game.moves}`;
             if (game.moves <= 0) {
@@ -224,34 +139,38 @@
                 for (let j = 0; j < game.puzzleSize - 2; j++) {
                     if (game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 1] && game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 2]) {
                         matched = true;
+                        game.puzzleGrid[i][j] = game.puzzleGrid[i][j + 1] = game.puzzleGrid[i][j + 2] = 0; // Clear matched blocks
                     }
                 }
             }
             // Check columns
-            for (let i = 0; i < game.puzzleSize - 2; i++) {
-                for (let j = 0; j < game.puzzleSize; j++) {
+            for (let j = 0; j < game.puzzleSize; j++) {
+                for (let i = 0; i < game.puzzleSize - 2; i++) {
                     if (game.puzzleGrid[i][j] === game.puzzleGrid[i + 1][j] && game.puzzleGrid[i][j] === game.puzzleGrid[i + 2][j]) {
                         matched = true;
+                        game.puzzleGrid[i][j] = game.puzzleGrid[i + 1][j] = game.puzzleGrid[i + 2][j] = 0; // Clear matched blocks
                     }
                 }
+            }
+
+            if (matched) {
+                updatePuzzleGrid();
             }
             return matched;
         }
 
-        function updatePuzzle() {
-            for (let i = game.puzzleSize - 1; i >= 0; i--) {
-                for (let j = 0; j < game.puzzleSize; j++) {
+        function updatePuzzleGrid() {
+            for (let j = 0; j < game.puzzleSize; j++) {
+                for (let i = game.puzzleSize - 1; i >= 0; i--) {
                     if (game.puzzleGrid[i][j] === 0) {
-                        for (let k = i - 1; k >= 0; k--) {
-                            if (game.puzzleGrid[k][j] !== 0) {
-                                game.puzzleGrid[i][j] = game.puzzleGrid[k][j];
-                                game.puzzleGrid[k][j] = 0;
-                                break;
-                            }
+                        for (let k = i; k > 0; k--) {
+                            game.puzzleGrid[k][j] = game.puzzleGrid[k - 1][j];
                         }
+                        game.puzzleGrid[0][j] = Math.floor(Math.random() * 4) + 1;
                     }
                 }
             }
+            renderPuzzle();
         }
 
         function winGame() {
@@ -279,71 +198,61 @@
             gameLoop();
         }
 
-        function updateFinley() {
-            const directions = [
-                { x: -1, y: 0 },  // Left
-                { x: 0, y: 1 },   // Down
-                { x: 1, y: 0 },   // Right
-                { x: 0, y: -1 }   // Up
-            ];
-
-            game.finley.direction = (game.finley.direction + 1) % directions.length;
-            const move = directions[game.finley.direction];
-
-            game.finley.x += move.x * game.finley.speed;
-            game.finley.y += move.y * game.finley.speed;
-
-            // Wrap around logic
-            if (game.finley.x < 0) game.finley.x = canvas.width - game.finley.width;
-            if (game.finley.x >= canvas.width) game.finley.x = 0;
-            if (game.finley.y < 0) game.finley.y = canvas.height - game.finley.height;
-            if (game.finley.y >= canvas.height) game.finley.y = 0;
-        }
-
-        function updateShark() {
-            const dx = game.finley.x - game.shark.x;
-            const dy = game.finley.y - game.shark.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const directionX = dx / distance;
-            const directionY = dy / distance;
-
-            game.shark.x += directionX * game.shark.speed;
-            game.shark.y += directionY * game.shark.speed;
-
-            // Keep the shark within bounds
-            if (game.shark.x < 0) game.shark.x = 0;
-            if (game.shark.x + game.shark.width > canvas.width) game.shark.x = canvas.width - game.shark.width;
-            if (game.shark.y < 0) game.shark.y = 0;
-            if (game.shark.y + game.shark.height > canvas.height) game.shark.y = canvas.height - game.shark.height;
-        }
-
         function checkCollision() {
-            return game.finley.x < game.shark.x + game.shark.width &&
-                   game.finley.x + game.finley.width > game.shark.x &&
-                   game.finley.y < game.shark.y + game.shark.height &&
-                   game.finley.y + game.finley.height > game.shark.y;
+            if (
+                game.finley.x < game.shark.x + game.shark.width &&
+                game.finley.x + game.finley.width > game.shark.x &&
+                game.finley.y < game.shark.y + game.shark.height &&
+                game.finley.y + game.finley.height > game.shark.y
+            ) {
+                return true;
+            }
+            return false;
         }
 
-        function drawFinleyAndShark() {
+        function updateGame() {
+            // Finley's movement logic
+            if (game.finley.x <= 100 && game.finley.y < 500) {
+                game.finley.y += game.finley.speed; // Move down
+            } else if (game.finley.y >= 500 && game.finley.x < 500) {
+                game.finley.x += game.finley.speed; // Move right
+            } else if (game.finley.x >= 500 && game.finley.y > 100) {
+                game.finley.y -= game.finley.speed; // Move up
+            } else if (game.finley.y <= 100 && game.finley.x > 100) {
+                game.finley.x -= game.finley.speed; // Move left
+            }
+
+            // Shark follows Finley
+            const originalX = game.shark.x;
+            const originalY = game.shark.y;
+
+            if (game.shark.x < game.finley.x) game.shark.x += game.shark.speed;
+            if (game.shark.x > game.finley.x) game.shark.x -= game.shark.speed;
+            if (game.shark.y < game.finley.y) game.shark.y += game.shark.speed;
+            if (game.shark.y > game.finley.y) game.shark.y -= game.shark.speed;
+
+            if (checkCollision()) {
+                gameOver();
+                return;
+            }
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'green';
             ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
-            ctx.fillStyle = 'blue';
+            ctx.fillStyle = 'gray';
             ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
         }
 
         function gameLoop() {
-            if (!game.gameOver && !game.paused) {
-                updateFinley();
-                updateShark();
-                if (checkCollision()) {
-                    gameOver();
-                    return;
-                }
-                drawFinleyAndShark();
+            if (!game.gameOver) {
+                updateGame();
                 requestAnimationFrame(gameLoop);
             }
         }
+
+        // Initialize the game
+        initPuzzle();
+        gameLoop();
     </script>
 </body>
 </html>
