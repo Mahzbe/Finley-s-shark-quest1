@@ -109,17 +109,17 @@
     <button id="pauseGameBtn" style="display: none;">Pause Game</button>
 
     <script>
-        // Leave Finley and Shark logic intact
-
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+
         let game = {
             finley: {
                 x: 50,
                 y: 50,
                 width: 30,
                 height: 30,
-                speed: 2
+                speed: 2,
+                direction: 0 // 0: left, 1: down, 2: right, 3: up
             },
             shark: {
                 x: 200,
@@ -296,8 +296,63 @@
             if (!game.paused) {
                 // Update game state
                 updatePuzzle();
+                moveFinley();
+                moveShark();
+                checkCollisions();
             }
             requestAnimationFrame(gameLoop);
+        }
+
+        function moveFinley() {
+            const directions = ['left', 'down', 'right', 'up'];
+            const speed = game.finley.speed;
+            switch (game.finley.direction) {
+                case 0: // Move left
+                    game.finley.x -= speed;
+                    if (game.finley.x < 0) game.finley.x = canvas.width;
+                    break;
+                case 1: // Move down
+                    game.finley.y += speed;
+                    if (game.finley.y > canvas.height) game.finley.y = 0;
+                    break;
+                case 2: // Move right
+                    game.finley.x += speed;
+                    if (game.finley.x > canvas.width) game.finley.x = 0;
+                    break;
+                case 3: // Move up
+                    game.finley.y -= speed;
+                    if (game.finley.y < 0) game.finley.y = canvas.height;
+                    break;
+            }
+            // Change direction
+            game.finley.direction = (game.finley.direction + 1) % 4;
+            drawFinleyAndShark();
+        }
+
+        function moveShark() {
+            const speed = game.shark.speed;
+            if (game.shark.x < game.finley.x) game.shark.x += speed;
+            if (game.shark.x > game.finley.x) game.shark.x -= speed;
+            if (game.shark.y < game.finley.y) game.shark.y += speed;
+            if (game.shark.y > game.finley.y) game.shark.y -= speed;
+            drawFinleyAndShark();
+        }
+
+        function checkCollisions() {
+            if (game.finley.x < game.shark.x + game.shark.width &&
+                game.finley.x + game.finley.width > game.shark.x &&
+                game.finley.y < game.shark.y + game.shark.height &&
+                game.finley.y + game.finley.height > game.shark.y) {
+                gameOver();
+            }
+        }
+
+        function drawFinleyAndShark() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'green';
+            ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
         }
     </script>
 </body>
