@@ -7,24 +7,15 @@
     <style>
         canvas {
             border: 1px solid black;
-            display: block;
-            margin: 0 auto;
         }
         #puzzleGrid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, 50px);
             gap: 2px;
-            width: 280px;
-            margin: 20px auto;
         }
         #puzzleGrid div {
-            width: 65px;
-            height: 65px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1em;
-            cursor: pointer;
+            width: 50px;
+            height: 50px;
         }
         #gameOverScreen, #congratulationsScreen {
             display: none;
@@ -33,41 +24,29 @@
         #congratulationsScreen {
             color: green;
             font-size: 2em;
-            position: fixed;
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border: 2px solid green;
         }
         #gameOverScreen {
             color: red;
             font-size: 2em;
-            position: fixed;
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: white;
-            padding: 20px;
-            border: 2px solid red;
         }
-        #movesCounter, #matchesCounter {
-            text-align: center;
-            font-size: 1.2em;
-            margin: 10px;
-        }
-        #musicButton {
-            display: block;
-            margin: 20px auto;
-            font-size: 1em;
-            padding: 10px 20px;
-            cursor: pointer;
+        #playMusicButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <button id="playMusicButton">Play Music</button>
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
     <div id="gameOverScreen">
         <h1>Game Over!</h1>
         <button onclick="restartGame()">Restart</button>
@@ -79,19 +58,18 @@
     <div id="movesCounter">Moves: 14</div>
     <div id="matchesCounter">Matches: 0</div>
     <div id="puzzleGrid"></div>
-    <button id="musicButton" onclick="toggleMusic()">Play Music</button>
+    
+    <audio id="backgroundMusic" src="fin.mp3" preload="auto"></audio>
     
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const musicButton = document.getElementById('musicButton');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const playMusicButton = document.getElementById('playMusicButton');
         
-        let musicPlaying = false;
-        let music = new Audio('your-music-file.mp3'); // Replace with your music file
-
         let game = {
             finley: { x: 50, y: 50, width: 30, height: 30, speed: 2 },
-            shark: { x: 300, y: 300, width: 50, height: 50, speed: 1 },
+            shark: { x: 300, y: 300, width: 50, height: 50, speed: 1 }, // Slowed down Shark
             moves: 14,
             matches: 0,
             gameOver: false,
@@ -139,7 +117,7 @@
                     document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
                     if (game.matches >= 5) {
                         winGame();
-                        return;
+                        return; // Exit to avoid decrementing moves after win
                     }
                 }
             } else {
@@ -162,19 +140,21 @@
 
         function checkMatches() {
             let matched = false;
+            // Check rows
             for (let i = 0; i < game.puzzleSize; i++) {
                 for (let j = 0; j < game.puzzleSize - 2; j++) {
                     if (game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 1] && game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 2]) {
                         matched = true;
-                        game.puzzleGrid[i][j] = game.puzzleGrid[i][j + 1] = game.puzzleGrid[i][j + 2] = 0;
+                        game.puzzleGrid[i][j] = game.puzzleGrid[i][j + 1] = game.puzzleGrid[i][j + 2] = 0; // Clear matched blocks
                     }
                 }
             }
+            // Check columns
             for (let j = 0; j < game.puzzleSize; j++) {
                 for (let i = 0; i < game.puzzleSize - 2; i++) {
                     if (game.puzzleGrid[i][j] === game.puzzleGrid[i + 1][j] && game.puzzleGrid[i][j] === game.puzzleGrid[i + 2][j]) {
                         matched = true;
-                        game.puzzleGrid[i][j] = game.puzzleGrid[i + 1][j] = game.puzzleGrid[i + 2][j] = 0;
+                        game.puzzleGrid[i][j] = game.puzzleGrid[i + 1][j] = game.puzzleGrid[i + 2][j] = 0; // Clear matched blocks
                     }
                 }
             }
@@ -186,6 +166,7 @@
         }
 
         function updatePuzzleGrid() {
+            // Move blocks down and refill the grid
             for (let j = 0; j < game.puzzleSize; j++) {
                 for (let i = game.puzzleSize - 1; i >= 0; i--) {
                     if (game.puzzleGrid[i][j] === 0) {
@@ -202,66 +183,57 @@
         function winGame() {
             game.gameOver = true;
             document.getElementById('congratulationsScreen').style.display = 'block';
-            document.getElementById('gameCanvas').style.display = 'none';
+            document.getElementById('gameCanvas').style.display = 'none'; // Hide the game canvas
+            backgroundMusic.pause(); // Stop music on win
         }
 
         function gameOver() {
             game.gameOver = true;
             document.getElementById('gameOverScreen').style.display = 'block';
-            document.getElementById('gameCanvas').style.display = 'none';
+            document.getElementById('gameCanvas').style.display = 'none'; // Hide the game canvas
+            backgroundMusic.pause(); // Stop music on game over
         }
 
         function restartGame() {
-            game.moves = 14;
+            game.moves = 14; // Reset to 14 moves
             game.matches = 0;
             game.gameOver = false;
             document.getElementById('gameOverScreen').style.display = 'none';
             document.getElementById('congratulationsScreen').style.display = 'none';
-            document.getElementById('gameCanvas').style.display = 'block';
+            document.getElementById('gameCanvas').style.display = 'block'; // Show the game canvas
             document.getElementById('movesCounter').innerText = `Moves: ${game.moves}`;
             document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
             initPuzzle();
             gameLoop();
         }
 
-        function toggleMusic() {
-            if (musicPlaying) {
-                music.pause();
-                musicButton.textContent = 'Play Music';
-            } else {
-                music.play();
-                musicButton.textContent = 'Pause Music';
-            }
-            musicPlaying = !musicPlaying;
-        }
-
         function checkCollision() {
+            // Check if Finley and the Shark collide
             if (
                 game.finley.x < game.shark.x + game.shark.width &&
                 game.finley.x + game.finley.width > game.shark.x &&
                 game.finley.y < game.shark.y + game.shark.height &&
                 game.finley.y + game.finley.height > game.shark.y
             ) {
+                // Handle collision
                 return true;
             }
             return false;
         }
 
         function updateGame() {
-            if (game.finley.x <= 50 && game.finley.y < canvas.height - 50) {
+            // Finley's movement logic
+            if (game.finley.x <= 50 && game.finley.y < 550) {
                 game.finley.y += game.finley.speed;
-            } else if (game.finley.y >= canvas.height - 50 && game.finley.x < canvas.width - 50) {
+            } else if (game.finley.y >= 550 && game.finley.x < 550) {
                 game.finley.x += game.finley.speed;
-            } else if (game.finley.x >= canvas.width - 50 && game.finley.y > 50) {
+            } else if (game.finley.x >= 550 && game.finley.y > 50) {
                 game.finley.y -= game.finley.speed;
             } else if (game.finley.y <= 50 && game.finley.x > 50) {
                 game.finley.x -= game.finley.speed;
             }
 
-            // Move the Shark towards Finley
-            const originalX = game.shark.x;
-            const originalY = game.shark.y;
-
+            // Shark's movement logic
             if (game.shark.x < game.finley.x) {
                 game.shark.x += game.shark.speed;
             } else if (game.shark.x > game.finley.x) {
@@ -274,25 +246,16 @@
                 game.shark.y -= game.shark.speed;
             }
 
-            // Prevent Shark from moving off-screen and make sure it never collides with Finley
-            if (game.shark.x < 0) game.shark.x = 0;
-            if (game.shark.y < 0) game.shark.y = 0;
-            if (game.shark.x + game.shark.width > canvas.width) game.shark.x = canvas.width - game.shark.width;
-            if (game.shark.y + game.shark.height > canvas.height) game.shark.y = canvas.height - game.shark.height;
-
             if (checkCollision()) {
-                game.shark.x = originalX;
-                game.shark.y = originalY;
+                gameOver();
             }
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             ctx.fillStyle = 'green';
             ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
-
-            ctx.fillStyle = 'blue';
+            ctx.fillStyle = 'gray';
             ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
         }
 
@@ -304,10 +267,22 @@
             }
         }
 
-        window.onload = () => {
-            initPuzzle();
-            gameLoop();
-        };
+        // Initialize puzzle and start game loop
+        initPuzzle();
+        gameLoop();
+
+        // Music controls
+        let isPlaying = false;
+        playMusicButton.addEventListener('click', () => {
+            if (isPlaying) {
+                backgroundMusic.pause();
+                playMusicButton.textContent = 'Play Music';
+            } else {
+                backgroundMusic.play();
+                playMusicButton.textContent = 'Pause Music';
+            }
+            isPlaying = !isPlaying;
+        });
     </script>
 </body>
 </html>
