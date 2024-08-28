@@ -7,9 +7,9 @@
     <style>
         body {
             background-image: url('background.png');
-            background-size: cover; /* Ensure the background covers the entire viewport */
-            background-position: center; /* Center the background image */
-            background-repeat: no-repeat; /* Prevent the background from repeating */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -19,16 +19,19 @@
         }
         canvas {
             border: 1px solid black;
+            width: 100%;
+            max-width: 400px;
         }
         #puzzleGrid {
             display: grid;
-            grid-template-columns: repeat(4, 50px);
+            grid-template-columns: repeat(4, 1fr);
             gap: 2px;
             margin: 20px;
         }
         #puzzleGrid div {
-            width: 50px;
-            height: 50px;
+            width: 100%;
+            padding-top: 100%;
+            background-color: grey;
         }
         #congratulationsScreen, #gameOverScreen, #menuScreen {
             text-align: center;
@@ -40,35 +43,41 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-        }
-        #menuScreen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        #menuScreen button {
-            margin: 10px;
+            width: 80%;
+            max-width: 300px;
         }
         #gameCanvas {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
+            position: relative;
+            width: 100%;
+            max-width: 400px;
         }
         #movesCounter, #matchesCounter {
-            position: absolute;
-            top: 420px;
-            font-size: 20px;
+            position: fixed;
+            top: 20px;
+            font-size: 16px;
+            width: 100%;
+            text-align: center;
         }
         #movesCounter {
-            left: 20px;
+            left: 0;
         }
         #matchesCounter {
-            left: 150px;
+            left: 0;
         }
-        /* Hide the audio controls if you don't want them displayed */
         #themeMusic {
             display: none;
+        }
+        button {
+            font-size: 18px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
@@ -119,7 +128,6 @@
             puzzleGrid: [],
             puzzleSize: 4,
             selectedBlock: null,
-            paused: false
         };
 
         document.getElementById('startGameBtn').addEventListener('click', () => {
@@ -135,20 +143,22 @@
         });
 
         document.getElementById('pauseGameBtn').addEventListener('click', () => {
-            game.paused = !game.paused;
-            document.getElementById('pauseGameBtn').innerText = game.paused ? 'Resume Game' : 'Pause Game';
+            paused = !paused;
+            if (paused) {
+                document.getElementById('pauseGameBtn').innerText = 'Resume Game';
+            } else {
+                document.getElementById('pauseGameBtn').innerText = 'Pause Game';
+            }
         });
 
-        const themeMusic = document.getElementById('themeMusic');
-        const toggleMusicBtn = document.getElementById('toggleMusicBtn');
-
-        toggleMusicBtn.addEventListener('click', () => {
-            if (themeMusic.paused) {
-                themeMusic.play();
-                toggleMusicBtn.innerText = 'Pause Music';
+        document.getElementById('toggleMusicBtn').addEventListener('click', () => {
+            const music = document.getElementById('themeMusic');
+            if (music.paused) {
+                music.play();
+                document.getElementById('toggleMusicBtn').innerText = 'Pause Music';
             } else {
-                themeMusic.pause();
-                toggleMusicBtn.innerText = 'Play Music';
+                music.pause();
+                document.getElementById('toggleMusicBtn').innerText = 'Play Music';
             }
         });
 
@@ -222,112 +232,80 @@
                 for (let j = 0; j < game.puzzleSize - 2; j++) {
                     if (game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 1] && game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 2]) {
                         matched = true;
+                        game.puzzleGrid[i][j] = game.puzzleGrid[i][j + 1] = game.puzzleGrid[i][j + 2] = 0; // Clear matched blocks
                     }
                 }
             }
             // Check columns
-            for (let i = 0; i < game.puzzleSize - 2; i++) {
-                for (let j = 0; j < game.puzzleSize; j++) {
+            for (let j = 0; j < game.puzzleSize; j++) {
+                for (let i = 0; i < game.puzzleSize - 2; i++) {
                     if (game.puzzleGrid[i][j] === game.puzzleGrid[i + 1][j] && game.puzzleGrid[i][j] === game.puzzleGrid[i + 2][j]) {
                         matched = true;
+                        game.puzzleGrid[i][j] = game.puzzleGrid[i + 1][j] = game.puzzleGrid[i + 2][j] = 0; // Clear matched blocks
                     }
                 }
+            }
+            if (matched) {
+                updatePuzzleGrid();
             }
             return matched;
         }
 
-        function updatePuzzle() {
-            for (let i = game.puzzleSize - 1; i >= 0; i--) {
-                for (let j = 0; j < game.puzzleSize; j++) {
-                    if (game.puzzleGrid[i][j] === 0) {
-                        game.puzzleGrid[i][j] = Math.floor(Math.random() * 4) + 1;
+        function updatePuzzleGrid() {
+            // Move blocks down and refill the grid
+            for (let j = 0; j < game.puzzleSize; j++) {
+                let emptySpace = game.puzzleSize - 1;
+                for (let i = game.puzzleSize - 1; i >= 0; i--) {
+                    if (game.puzzleGrid[i][j] !== 0) {
+                        game.puzzleGrid[emptySpace][j] = game.puzzleGrid[i][j];
+                        if (emptySpace !== i) {
+                            game.puzzleGrid[i][j] = 0;
+                        }
+                        emptySpace--;
                     }
+                }
+                for (let i = emptySpace; i >= 0; i--) {
+                    game.puzzleGrid[i][j] = Math.floor(Math.random() * 4) + 1;
                 }
             }
         }
 
         function winGame() {
-            game.gameOver = true;
             document.getElementById('congratulationsScreen').style.display = 'block';
-            document.getElementById('gameCanvas').style.display = 'none'; // Hide the game canvas
+            document.getElementById('pauseGameBtn').style.display = 'none';
+            document.getElementById('gameCanvas').style.display = 'none';
         }
 
         function gameOver() {
-            game.gameOver = true;
             document.getElementById('gameOverScreen').style.display = 'block';
-            document.getElementById('gameCanvas').style.display = 'none'; // Hide the game canvas
+            document.getElementById('pauseGameBtn').style.display = 'none';
+            document.getElementById('gameCanvas').style.display = 'none';
         }
 
         function restartGame() {
-            game.moves = 14; // Reset to 14 moves
+            game.moves = 14;
             game.matches = 0;
+            game.selectedBlock = null;
             game.gameOver = false;
+            initPuzzle();
             document.getElementById('gameOverScreen').style.display = 'none';
             document.getElementById('congratulationsScreen').style.display = 'none';
-            document.getElementById('gameCanvas').style.display = 'block'; // Show the game canvas
-            document.getElementById('movesCounter').innerText = `Moves: ${game.moves}`;
-            document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
-            initPuzzle();
-            gameLoop();
-        }
-
-        function checkCollision() {
-            // Check if Finley and the Shark collide
-            if (game.finley.x < game.shark.x + game.shark.width && game.finley.x + game.finley.width > game.shark.x && game.finley.y < game.shark.y + game.shark.height && game.finley.y + game.finley.height > game.shark.y) {
-                // Handle collision
-                return true;
-            }
-            return false;
-        }
-
-        function updateGame() {
-            // Finley's movement logic
-            if (game.finley.x <= 50 && game.finley.y < 350) {
-                game.finley.y += game.finley.speed; // Move down
-            } else if (game.finley.y >= 350 && game.finley.x < 350) {
-                game.finley.x += game.finley.speed; // Move right
-            } else if (game.finley.x >= 350 && game.finley.y > 50) {
-                game.finley.y -= game.finley.speed; // Move up
-            } else if (game.finley.y <= 50 && game.finley.x > 50) {
-                game.finley.x -= game.finley.speed; // Move left
-            }
-            // Shark follows Finley
-            const originalX = game.shark.x;
-            const originalY = game.shark.y;
-            if (game.shark.x < game.finley.x) {
-                game.shark.x += game.shark.speed;
-            } else if (game.shark.x > game.finley.x) {
-                game.shark.x -= game.shark.speed;
-            }
-            if (game.shark.y < game.finley.y) {
-                game.shark.y += game.shark.speed;
-            } else if (game.shark.y > game.finley.y) {
-                game.shark.y -= game.shark.speed;
-            }
-            // Check for collision and revert Shark's position if necessary
-            if (checkCollision()) {
-                game.shark.x = originalX;
-                game.shark.y = originalY;
-            }
-        }
-
-        function renderGame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Draw Finley
-            ctx.fillStyle = 'green';
-            ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
-            // Draw Shark
-            ctx.fillStyle = 'red';
-            ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
+            document.getElementById('pauseGameBtn').style.display = 'block';
+            document.getElementById('gameCanvas').style.display = 'block';
         }
 
         function gameLoop() {
-            if (!game.gameOver && !game.paused) {
-                updateGame();
-                renderGame();
-                requestAnimationFrame(gameLoop);
-            }
+            if (game.gameOver) return;
+            // Move Finley and Shark logic here if needed
+            requestAnimationFrame(gameLoop);
         }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth * 0.9;
+            canvas.height = canvas.width; // Keep the aspect ratio square
+        });
+
+        window.dispatchEvent(new Event('resize')); // Trigger resize event on load
     </script>
 </body>
 </html>
