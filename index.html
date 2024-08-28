@@ -20,15 +20,15 @@
         canvas {
             border: 1px solid black;
             width: 100%;
-            max-width: 360px; /* Adjust to a suitable size */
+            max-width: 300px; /* Adjust to a suitable size */
             height: auto;
-            max-height: 360px; /* Adjust to a suitable size */
+            max-height: 300px; /* Adjust to a suitable size */
         }
         #puzzleGrid {
             display: grid;
             grid-template-columns: repeat(4, 50px);
             gap: 2px;
-            margin: 20px;
+            margin: 10px;
         }
         #puzzleGrid div {
             width: 50px;
@@ -36,7 +36,7 @@
         }
         #congratulationsScreen, #gameOverScreen, #menuScreen {
             text-align: center;
-            padding: 20px;
+            padding: 10px;
             border: 1px solid black;
             border-radius: 10px;
             background-color: #fff;
@@ -44,7 +44,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            max-width: 90%; /* Ensure it fits well on smaller screens */
+            max-width: 80%; /* Ensure it fits well on smaller screens */
         }
         #menuScreen {
             display: flex;
@@ -52,8 +52,8 @@
             align-items: center;
         }
         #menuScreen button {
-            margin: 10px;
-            font-size: 16px;
+            margin: 5px;
+            font-size: 14px;
         }
         #gameCanvas {
             position: absolute;
@@ -64,13 +64,13 @@
         #movesCounter, #matchesCounter {
             position: absolute;
             top: 70%;
-            font-size: 18px;
+            font-size: 14px;
         }
         #movesCounter {
             left: 10px;
         }
         #matchesCounter {
-            left: 120px;
+            left: 100px;
         }
         /* Hide the audio controls if you don't want them displayed */
         #themeMusic {
@@ -78,17 +78,17 @@
         }
         #pauseGameBtn {
             position: absolute;
-            bottom: 20px;
+            bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 16px;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <audio id="themeMusic" src="fin.mp3" preload="auto"></audio>
     <button id="toggleMusicBtn">Play Music</button>
-    <canvas id="gameCanvas" width="360" height="360"></canvas>
+    <canvas id="gameCanvas" width="300" height="300"></canvas>
     <div id="menuScreen">
         <h1>Welcome to Finley's Shark Quest</h1>
         <button id="startGameBtn">Start Game</button>
@@ -109,6 +109,8 @@
     <button id="pauseGameBtn" style="display: none;">Pause Game</button>
 
     <script>
+        // Leave Finley and Shark logic intact
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         let game = {
@@ -120,8 +122,8 @@
                 speed: 2
             },
             shark: {
-                x: 300,
-                y: 300,
+                x: 200,
+                y: 200,
                 width: 50,
                 height: 50,
                 speed: 1
@@ -263,13 +265,6 @@
                     }
                 }
             }
-            for (let i = 0; i < game.puzzleSize; i++) {
-                for (let j = 0; j < game.puzzleSize; j++) {
-                    if (game.puzzleGrid[i][j] === 0) {
-                        game.puzzleGrid[i][j] = Math.floor(Math.random() * 4) + 1;
-                    }
-                }
-            }
             renderPuzzle();
         }
 
@@ -288,17 +283,18 @@
         function restartGame() {
             game.moves = 14;
             game.matches = 0;
-            document.getElementById('movesCounter').innerText = `Moves: ${game.moves}`;
-            document.getElementById('matchesCounter').innerText = `Matches: ${game.matches}`;
-            document.getElementById('congratulationsScreen').style.display = 'none';
-            document.getElementById('gameOverScreen').style.display = 'none';
+            game.gameOver = false;
+            game.puzzleGrid = [];
             initPuzzle();
+            document.getElementById('gameOverScreen').style.display = 'none';
+            document.getElementById('congratulationsScreen').style.display = 'none';
             document.getElementById('gameCanvas').style.display = 'block';
+            document.getElementById('pauseGameBtn').style.display = 'block';
         }
 
         function gameLoop() {
-            if (!game.paused && !game.gameOver) {
-                // Update and draw game objects here
+            if (!game.paused) {
+                // Update game state
                 updatePuzzle();
             }
             requestAnimationFrame(gameLoop);
