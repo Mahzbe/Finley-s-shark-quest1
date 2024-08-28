@@ -130,6 +130,8 @@
             selectedBlock: null,
         };
 
+        let paused = false;
+
         document.getElementById('startGameBtn').addEventListener('click', () => {
             initPuzzle();
             gameLoop();
@@ -252,7 +254,6 @@
         }
 
         function updatePuzzleGrid() {
-            // Move blocks down and refill the grid
             for (let j = 0; j < game.puzzleSize; j++) {
                 let emptySpace = game.puzzleSize - 1;
                 for (let i = game.puzzleSize - 1; i >= 0; i--) {
@@ -295,8 +296,14 @@
         }
 
         function gameLoop() {
-            if (game.gameOver) return;
-            // Move Finley and Shark logic here if needed
+            if (game.gameOver || paused) return;
+            // Move Finley and Shark logic here
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'green';
+            ctx.fillRect(game.finley.x, game.finley.y, game.finley.width, game.finley.height);
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
+            // Update Finley and Shark positions here
             requestAnimationFrame(gameLoop);
         }
 
