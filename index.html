@@ -118,6 +118,7 @@
             puzzleGrid: [],
             puzzleSize: 4,
             selectedBlock: null,
+            paused: false
         };
 
         document.getElementById('startGameBtn').addEventListener('click', () => {
@@ -133,12 +134,8 @@
         });
 
         document.getElementById('pauseGameBtn').addEventListener('click', () => {
-            paused = !paused;
-            if (paused) {
-                document.getElementById('pauseGameBtn').innerText = 'Resume Game';
-            } else {
-                document.getElementById('pauseGameBtn').innerText = 'Pause Game';
-            }
+            game.paused = !game.paused;
+            document.getElementById('pauseGameBtn').innerText = game.paused ? 'Resume Game' : 'Pause Game';
         });
 
         function initPuzzle() {
@@ -330,10 +327,8 @@
             ctx.fillRect(game.shark.x, game.shark.y, game.shark.width, game.shark.height);
         }
 
-        let paused = false;
-
         function gameLoop() {
-            if (!game.gameOver && !paused) {
+            if (!game.gameOver && !game.paused) {
                 updateGame();
                 renderGame();
                 requestAnimationFrame(gameLoop);
