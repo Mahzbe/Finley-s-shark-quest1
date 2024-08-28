@@ -73,7 +73,8 @@
     </style>
 </head>
 <body>
-    <audio id="themeMusic" src="fin.mp3" autoplay loop></audio>
+    <audio id="themeMusic" src="fin.mp3" preload="auto"></audio>
+    <button id="toggleMusicBtn">Play Music</button>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
     <div id="menuScreen">
         <h1>Welcome to Finley's Shark Quest</h1>
@@ -136,6 +137,19 @@
         document.getElementById('pauseGameBtn').addEventListener('click', () => {
             game.paused = !game.paused;
             document.getElementById('pauseGameBtn').innerText = game.paused ? 'Resume Game' : 'Pause Game';
+        });
+
+        const themeMusic = document.getElementById('themeMusic');
+        const toggleMusicBtn = document.getElementById('toggleMusicBtn');
+
+        toggleMusicBtn.addEventListener('click', () => {
+            if (themeMusic.paused) {
+                themeMusic.play();
+                toggleMusicBtn.innerText = 'Pause Music';
+            } else {
+                themeMusic.pause();
+                toggleMusicBtn.innerText = 'Play Music';
+            }
         });
 
         function initPuzzle() {
@@ -208,42 +222,22 @@
                 for (let j = 0; j < game.puzzleSize - 2; j++) {
                     if (game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 1] && game.puzzleGrid[i][j] === game.puzzleGrid[i][j + 2]) {
                         matched = true;
-                        game.puzzleGrid[i][j] = game.puzzleGrid[i][j + 1] = game.puzzleGrid[i][j + 2] = 0; // Clear matched blocks
                     }
                 }
             }
             // Check columns
-            for (let j = 0; j < game.puzzleSize; j++) {
-                for (let i = 0; i < game.puzzleSize - 2; i++) {
+            for (let i = 0; i < game.puzzleSize - 2; i++) {
+                for (let j = 0; j < game.puzzleSize; j++) {
                     if (game.puzzleGrid[i][j] === game.puzzleGrid[i + 1][j] && game.puzzleGrid[i][j] === game.puzzleGrid[i + 2][j]) {
                         matched = true;
-                        game.puzzleGrid[i][j] = game.puzzleGrid[i + 1][j] = game.puzzleGrid[i + 2][j] = 0; // Clear matched blocks
                     }
                 }
-            }
-            if (matched) {
-                updatePuzzleGrid();
             }
             return matched;
         }
 
-        function updatePuzzleGrid() {
-            // Move blocks down and refill the grid
-            for (let j = 0; j < game.puzzleSize; j++) {
-                for (let i = game.puzzleSize - 1; i >= 0; i--) {
-                    if (game.puzzleGrid[i][j] === 0) {
-                        for (let k = i - 1; k >= 0; k--) {
-                            if (game.puzzleGrid[k][j] !== 0) {
-                                game.puzzleGrid[i][j] = game.puzzleGrid[k][j];
-                                game.puzzleGrid[k][j] = 0;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            // Fill the top with new blocks
-            for (let i = 0; i < game.puzzleSize; i++) {
+        function updatePuzzle() {
+            for (let i = game.puzzleSize - 1; i >= 0; i--) {
                 for (let j = 0; j < game.puzzleSize; j++) {
                     if (game.puzzleGrid[i][j] === 0) {
                         game.puzzleGrid[i][j] = Math.floor(Math.random() * 4) + 1;
