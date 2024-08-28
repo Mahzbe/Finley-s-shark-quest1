@@ -6,7 +6,10 @@
     <title>Finley's Shark Quest</title>
     <style>
         body {
-            background-color: #f0f0f0;
+            background-image: url('background.png');
+            background-size: cover; /* Ensure the background covers the entire viewport */
+            background-position: center; /* Center the background image */
+            background-repeat: no-repeat; /* Prevent the background from repeating */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -234,7 +237,6 @@
                     }
                 }
             }
-            renderPuzzle();
         }
 
         function winGame() {
