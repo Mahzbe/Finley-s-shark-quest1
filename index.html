@@ -245,9 +245,19 @@
                 game.shark.y -= game.shark.speed; // Move up
             }
 
-            // Check for collisions
+            // Ensure Shark does not collide with Finley
             if (checkCollision()) {
-                gameOver();
+                // Move Shark away from Finley
+                if (game.shark.x < game.finley.x) {
+                    game.shark.x -= game.shark.speed; // Move Shark left
+                } else if (game.shark.x > game.finley.x) {
+                    game.shark.x += game.shark.speed; // Move Shark right
+                }
+                if (game.shark.y < game.finley.y) {
+                    game.shark.y -= game.shark.speed; // Move Shark up
+                } else if (game.shark.y > game.finley.y) {
+                    game.shark.y += game.shark.speed; // Move Shark down
+                }
             }
 
             drawGame();
