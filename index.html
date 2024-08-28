@@ -12,6 +12,7 @@
             align-items: center;
             height: 100vh;
             margin: 0;
+            position: relative;
         }
         canvas {
             border: 1px solid black;
@@ -44,6 +45,22 @@
         }
         #menuScreen button {
             margin: 10px;
+        }
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #movesCounter, #matchesCounter {
+            position: absolute;
+            top: 420px;
+            font-size: 20px;
+        }
+        #movesCounter {
+            left: 20px;
+        }
+        #matchesCounter {
+            left: 150px;
         }
     </style>
 </head>
