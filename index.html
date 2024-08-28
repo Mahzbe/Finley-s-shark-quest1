@@ -14,11 +14,11 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 2px;
-            width: 280px; /* Adjusted for a better fit */
+            width: 280px;
             margin: 20px auto;
         }
         #puzzleGrid div {
-            width: 65px; /* Adjusted for a better fit */
+            width: 65px;
             height: 65px;
             display: flex;
             align-items: center;
@@ -57,6 +57,13 @@
             font-size: 1.2em;
             margin: 10px;
         }
+        #musicButton {
+            display: block;
+            margin: 20px auto;
+            font-size: 1em;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -72,11 +79,16 @@
     <div id="movesCounter">Moves: 14</div>
     <div id="matchesCounter">Matches: 0</div>
     <div id="puzzleGrid"></div>
+    <button id="musicButton" onclick="toggleMusic()">Play Music</button>
     
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const musicButton = document.getElementById('musicButton');
         
+        let musicPlaying = false;
+        let music = new Audio('your-music-file.mp3'); // Replace with your music file
+
         let game = {
             finley: { x: 50, y: 50, width: 30, height: 30, speed: 2 },
             shark: { x: 300, y: 300, width: 50, height: 50, speed: 1 },
@@ -212,6 +224,17 @@
             gameLoop();
         }
 
+        function toggleMusic() {
+            if (musicPlaying) {
+                music.pause();
+                musicButton.textContent = 'Play Music';
+            } else {
+                music.play();
+                musicButton.textContent = 'Pause Music';
+            }
+            musicPlaying = !musicPlaying;
+        }
+
         function checkCollision() {
             if (
                 game.finley.x < game.shark.x + game.shark.width &&
@@ -225,18 +248,41 @@
         }
 
         function updateGame() {
-            if (game.finley.x <= 50 && game.finley.y < 350) {
+            if (game.finley.x <= 50 && game.finley.y < canvas.height - 50) {
                 game.finley.y += game.finley.speed;
-            } else if (game.finley.y >= 350 && game.finley.x < 350) {
+            } else if (game.finley.y >= canvas.height - 50 && game.finley.x < canvas.width - 50) {
                 game.finley.x += game.finley.speed;
-            } else if (game.finley.x >= 350 && game.finley.y > 50) {
+            } else if (game.finley.x >= canvas.width - 50 && game.finley.y > 50) {
                 game.finley.y -= game.finley.speed;
             } else if (game.finley.y <= 50 && game.finley.x > 50) {
                 game.finley.x -= game.finley.speed;
             }
 
+            // Move the Shark towards Finley
+            const originalX = game.shark.x;
+            const originalY = game.shark.y;
+
+            if (game.shark.x < game.finley.x) {
+                game.shark.x += game.shark.speed;
+            } else if (game.shark.x > game.finley.x) {
+                game.shark.x -= game.shark.speed;
+            }
+
+            if (game.shark.y < game.finley.y) {
+                game.shark.y += game.shark.speed;
+            } else if (game.shark.y > game.finley.y) {
+                game.shark.y -= game.shark.speed;
+            }
+
+            // Prevent Shark from moving off-screen and make sure it never collides with Finley
+            if (game.shark.x < 0) game.shark.x = 0;
+            if (game.shark.y < 0) game.shark.y = 0;
+            if (game.shark.x + game.shark.width > canvas.width) game.shark.x = canvas.width - game.shark.width;
+            if (game.shark.y + game.shark.height > canvas.height) game.shark.y = canvas.height - game.shark.height;
+
             if (checkCollision()) {
-                gameOver();
+                game.shark.x = originalX;
+                game.shark.y = originalY;
             }
         }
 
@@ -254,12 +300,6 @@
             if (!game.gameOver) {
                 updateGame();
                 draw();
-                game.shark.x += game.shark.speed;
-                game.shark.y += game.shark.speed;
-                if (game.shark.x > canvas.width || game.shark.y > canvas.height) {
-                    game.shark.x = 0;
-                    game.shark.y = 0;
-                }
                 requestAnimationFrame(gameLoop);
             }
         }
