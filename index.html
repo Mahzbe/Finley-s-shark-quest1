@@ -66,9 +66,14 @@
         #matchesCounter {
             left: 150px;
         }
+        /* Hide the audio controls if you don't want them displayed */
+        #themeMusic {
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <audio id="themeMusic" src="fin.mp3" autoplay loop></audio>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
     <div id="menuScreen">
         <h1>Welcome to Finley's Shark Quest</h1>
@@ -230,10 +235,21 @@
             for (let j = 0; j < game.puzzleSize; j++) {
                 for (let i = game.puzzleSize - 1; i >= 0; i--) {
                     if (game.puzzleGrid[i][j] === 0) {
-                        for (let k = i; k > 0; k--) {
-                            game.puzzleGrid[k][j] = game.puzzleGrid[k - 1][j];
+                        for (let k = i - 1; k >= 0; k--) {
+                            if (game.puzzleGrid[k][j] !== 0) {
+                                game.puzzleGrid[i][j] = game.puzzleGrid[k][j];
+                                game.puzzleGrid[k][j] = 0;
+                                break;
+                            }
                         }
-                        game.puzzleGrid[0][j] = Math.floor(Math.random() * 4) + 1;
+                    }
+                }
+            }
+            // Fill the top with new blocks
+            for (let i = 0; i < game.puzzleSize; i++) {
+                for (let j = 0; j < game.puzzleSize; j++) {
+                    if (game.puzzleGrid[i][j] === 0) {
+                        game.puzzleGrid[i][j] = Math.floor(Math.random() * 4) + 1;
                     }
                 }
             }
